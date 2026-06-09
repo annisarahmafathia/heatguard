@@ -429,17 +429,9 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
       smoothCount="10" 
       smoothTolerance="0.01" 
       smoothThreshold="5">
-      <a-entity id="ar-wrapper">
-        <a-entity id="tubuh" ...></a-entity>
-        <a-entity id="matahari" ...></a-entity>
-        <a-entity id="layer-radiasi" ...></a-entity>
-        <a-entity id="layer-konveksi" ...></a-entity>
-        <a-entity id="layer-konduksi" ...></a-entity>
-        <a-entity id="aura-radiasi" ...></a-entity>
-        <a-entity id="aura-konveksi" ...></a-entity>
-        <a-entity id="aura-konduksi" ...></a-entity>
-      </a-entity>
-    </a-marker>
+    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.01 0.01 0.01" position="0 0.5 0" rotation="0 0 0"></a-entity>
+    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.005 0.005 0.005" position="-3.0 3.5 -0.5"
+      animation="property:rotation;from:0 0 0;to:0 360 0;dur:8000;loop:true;easing:linear"></a-entity>
 
     <!-- PANAH RADIASI: dari matahari (-3 3.5) ke tubuh (0 0.5) -->
       <a-entity id="layer-radiasi" visible="false">
@@ -676,7 +668,7 @@ function setVis(id,val){ const el=document.getElementById(id); if(el) el.setAttr
 let touchStartDist=0, touchStartScale=0.1, currentScale=0.1;
 let isDragging=false, lastTouchX=0, currentRotY=0;
 let mouseDown=false, lastMouseX=0;
-const getTubuh = ()=>document.getElementById('ar-wrapper');
+const getTubuh = ()=>document.getElementById('tubuh');
 
 document.addEventListener('touchstart',e=>{
   if(e.target.closest('#ui')) return;
