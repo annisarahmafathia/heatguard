@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HeatGuard AR</title>
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{overflow:hidden;font-family:'Inter',sans-serif;touch-action:none;background:#000;}
+.a-canvas{position:fixed!important;top:0;left:0;z-index:1!important;}
+a-scene{position:fixed;top:0;left:0;z-index:1;}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:500;pointer-events:none;}
+#ui{position:fixed;z-index:9999;width:100%;height:100%;pointer-events:none;top:0;left:0;}
+
+/* ── HEADER ── */
+#header{
+  position:absolute;top:0;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(2,8,20,0.95) 0%,transparent 100%);
+  padding:10px 12px 24px;pointer-events:none;
+}
+#header-center{text-align:center;flex:1;min-width:0;}
+.hg-title{
+  font-family:'Orbitron',sans-serif;font-size:clamp(14px,3.5vw,26px);font-weight:900;
+  background:linear-gradient(90deg,#FF6B00,#FFD700,#FF6B00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.05em;
+}
+.hg-title span{-webkit-text-fill-color:#fff;}
+.hg-sub{font-size:clamp(8px,1.8vw,11px);color:rgba(255,255,255,0.5);margin-top:2px;}
+#qr-badge{
+  background:rgba(10,18,40,0.90);border:1px solid rgba(255,255,255,0.15);
+  border-radius:10px;padding:7px 9px;color:#fff;
+  display:flex;align-items:center;gap:7px;
+  backdrop-filter:blur(8px);flex-shrink:0;
+}
+.qr-box{width:32px;height:32px;background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.qr-text{font-size:9px;font-weight:600;line-height:1.4;}
+.qr-sub{font-size:8px;color:rgba(255,255,255,0.45);}
+#suhu-badge{
+  background:rgba(10,18,40,0.90);border:1px solid rgba(77,184,255,0.3);
+  border-radius:10px;padding:9px 14px;color:#fff;text-align:right;  
+  backdrop-filter:blur(8px);flex-shrink:0;
+}
+.sb-label{font-size:10px;color:#4DB8FF;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}  
+.sb-val{font-size:clamp(16px,3vw,22px);font-weight:700;color:#4DF0A0;}  
+.sb-range{font-size:10px;color:rgba(255,255,255,0.45);}  
+
+/* ── ORGAN TAGS (muncul di atas model, dengan panah) ── */
+#organ-tags{position:absolute;inset:0;pointer-events:none;z-index:300;}
+.organ-tag{
+  position:absolute;display:flex;align-items:center;gap:0;
+  pointer-events:all;cursor:pointer;
+  opacity:0;transform:scale(0.8);
+  transition:opacity .4s,transform .4s;
+}
+.organ-tag.visible{opacity:1;transform:scale(1);}
+.organ-tag-bubble{
+  background:rgba(8,14,35,0.92);border:1px solid rgba(255,255,255,0.20);
+  border-radius:10px;padding:6px 10px;
+  display:flex;align-items:center;gap:6px;
+  backdrop-filter:blur(10px);white-space:nowrap;
+  transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.4);
+}
+.organ-tag-bubble:hover{background:rgba(20,35,80,0.95);border-color:rgba(255,255,255,0.40);}
+.organ-tag-bubble:active{transform:scale(0.94);}
+.otb-icon{font-size:16px;}
+.otb-name{font-size:10px;font-weight:700;color:#fff;}
+/* arrow line dari bubble ke tubuh — dibuat via SVG absolute */
+.organ-arrow{position:absolute;pointer-events:none;overflow:visible;}
+
+/* warna per organ */
+.ot-otak     .organ-tag-bubble{border-color:rgba(140,100,255,0.5);}
+.ot-otak     .otb-name{color:#C0AAFF;}
+.ot-jantung  .organ-tag-bubble{border-color:rgba(255,80,100,0.5);}
+.ot-jantung  .otb-name{color:#FF8090;}
+.ot-hati     .organ-tag-bubble{border-color:rgba(220,130,40,0.5);}
+.ot-hati     .otb-name{color:#FFAA70;}
+.ot-pembuluh .organ-tag-bubble{border-color:rgba(80,180,255,0.5);}
+.ot-pembuluh .otb-name{color:#7ACFFF;}
+.ot-kulit    .organ-tag-bubble{border-color:rgba(255,160,80,0.5);}
+.ot-kulit    .otb-name{color:#FFB87A;}
+
+/* ── POPUP INFOGRAFIS ── */
+#popup-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0.55);
+  display:none;align-items:center;justify-content:center;
+  pointer-events:all;z-index:1000;backdrop-filter:blur(6px);
+}
+#popup-overlay.show{display:flex;}
+#popup-card{
+  background:rgba(8,14,35,0.97);border-radius:20px;
+  padding:20px 20px 18px;max-width:340px;width:calc(100% - 32px);
+  border:1px solid rgba(255,255,255,0.14);
+  box-shadow:0 20px 60px rgba(0,0,0,0.7);
+  animation:popIn .3s cubic-bezier(.34,1.56,.64,1);position:relative;
+  max-height:80vh;overflow-y:auto;
+}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+#popup-close{
+  position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,0.10);border:none;color:#fff;font-size:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:all;
+}
+.popup-emoji{font-size:32px;margin-bottom:8px;}
+.popup-organ-name{font-size:15px;font-weight:700;margin-bottom:2px;}
+.popup-organ-func{font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:10px;font-style:italic;}
+.popup-divider{height:1px;background:rgba(255,255,255,0.08);margin-bottom:10px;}
+.popup-body{font-size:11.5px;color:rgba(255,255,255,0.78);line-height:1.7;}
+.popup-temp-tag{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;}
+/* infografis grid */
+.popup-infogrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.popup-infocard{background:rgba(255,255,255,0.05);border-radius:10px;padding:9px 10px;border:1px solid rgba(255,255,255,0.08);}
+.pic-icon{font-size:18px;margin-bottom:3px;}
+.pic-title{font-size:10px;font-weight:700;margin-bottom:2px;}
+.pic-body{font-size:9.5px;color:rgba(255,255,255,0.55);line-height:1.45;}
+
+/* ── HEAT PANEL (kanan) ── */
+#right-panel{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:7px;pointer-events:all;
+}
+.heat-section{
+  background:rgba(8,14,35,0.88);border-radius:12px;
+  border:1px solid rgba(255,255,255,0.10);
+  backdrop-filter:blur(10px);overflow:hidden;
+  width:clamp(160px,22vw,210px);  
+}
+.heat-section-header{
+  display:flex;align-items:center;gap:7px;padding:11px 13px 9px;  
+  cursor:pointer;transition:background .2s;
+}
+.heat-toggle-btn{
+  width:34px;height:34px;border-radius:7px;flex-shrink:0;  
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);
+  transition:all .25s;
+}
+.heat-toggle-btn svg{width:17px;height:17px;stroke:rgba(255,255,255,0.5);}  
+.hs-title{font-size:12px;font-weight:700;color:#fff;flex:1;}  
+.hs-sub{font-size:9px;color:rgba(255,255,255,0.40);margin-top:1px;}  
+.heat-section-body{padding:0 10px;max-height:0;overflow:hidden;transition:max-height .35s,padding .35s;}
+.heat-section.open .heat-section-body{max-height:80px;padding:0 10px 8px;}
+.hs-desc{font-size:11px;color:rgba(255,255,255,0.60);line-height:1.55;} 
+.heat-section.active-radiasi  .heat-toggle-btn{background:rgba(255,70,70,0.3);border-color:#FF4D4D;}
+.heat-section.active-radiasi  .heat-toggle-btn svg{stroke:#FF7070;}
+.heat-section.active-radiasi  .hs-title{color:#FF8080;}
+.heat-section.active-konveksi .heat-toggle-btn{background:rgba(70,150,255,0.3);border-color:#4DB8FF;}
+.heat-section.active-konveksi .heat-toggle-btn svg{stroke:#70C8FF;}
+.heat-section.active-konveksi .hs-title{color:#70C8FF;}
+.heat-section.active-konduksi .heat-toggle-btn{background:rgba(255,180,48,0.3);border-color:#FFB830;}
+.heat-section.active-konduksi .heat-toggle-btn svg{stroke:#FFD060;}
+.heat-section.active-konduksi .hs-title{color:#FFD060;}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(0deg,rgba(2,8,20,0.97) 0%,transparent 100%);
+  padding:16px 10px 12px;pointer-events:all;
+}
+#tab-bar{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+#tab-bar::-webkit-scrollbar{display:none;}
+.tab-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 10px;border-radius:10px;cursor:pointer;
+  border:1px solid rgba(255,255,255,0.12);background:rgba(10,18,40,0.80);
+  color:rgba(255,255,255,0.50);font-size:8px;font-weight:600;
+  letter-spacing:.04em;white-space:nowrap;transition:all .2s;
+  flex-shrink:0;min-width:60px;backdrop-filter:blur(8px);
+}
+.tab-btn .tb-icon{font-size:16px;}
+.tab-btn.active{background:rgba(77,184,255,0.20);border-color:#4DB8FF;color:#fff;}
+
+/* ── TAB CONTENT ── */
+#tab-content{position:absolute;bottom:72px;left:0;right:0;pointer-events:none;}
+.tab-panel{display:none;padding:0 10px;}
+.tab-panel.active{display:block;}
+#panel-struktur{display:flex;align-items:flex-end;gap:8px;}
+#suhu-sim-box{
+  background:rgba(8,14,35,0.92);border:1px solid rgba(255,255,255,0.12);
+  border-radius:12px;padding:10px 14px;backdrop-filter:blur(10px);pointer-events:all;
+  min-width:clamp(160px,40vw,210px);
+}
+.ss-label{font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.ss-val{font-size:clamp(22px,5vw,28px);font-weight:700;color:#4DF0A0;margin-bottom:8px;transition:color .4s;}
+#sim-slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer;}
+#sim-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #4DF0A0;cursor:pointer;}
+.sim-range{display:flex;justify-content:space-between;font-size:8px;color:rgba(255,255,255,0.30);margin-top:5px;}
+#sim-status{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;}
+#legenda{background:rgba(8,14,35,0.92);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:9px 12px;backdrop-filter:blur(10px);pointer-events:none;}
+.lg-title{font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.lg-item{display:flex;align-items:center;gap:6px;font-size:9px;color:rgba(255,255,255,0.65);margin-bottom:4px;}
+.lg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.info-tab-panel{background:rgba(8,14,35,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 14px;backdrop-filter:blur(10px);pointer-events:none;}
+.itp-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+.itp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.itp-card{background:rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,0.08);}
+.ic-icon{font-size:16px;margin-bottom:3px;}
+.ic-title{font-size:10px;font-weight:700;color:#fff;margin-bottom:2px;}
+.ic-body{font-size:9px;color:rgba(255,255,255,0.55);line-height:1.45;}
+.itp-list{display:flex;flex-direction:column;gap:5px;}
+.itp-item{display:flex;align-items:flex-start;gap:7px;font-size:10px;color:rgba(255,255,255,0.70);line-height:1.4;}
+.ii-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+
+#scan-hint{
+  position:absolute;bottom:85px;left:50%;transform:translateX(-50%);
+  background:rgba(8,14,35,0.80);border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;padding:6px 16px;color:rgba(255,255,255,0.55);
+  font-size:10px;white-space:nowrap;animation:pulse 2s ease-in-out infinite;
+  backdrop-filter:blur(6px);
+}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ── RESPONSIVE MOBILE ── */
+@media(max-width:480px){
+  #qr-badge .qr-text,.qr-sub{display:none;}
+  #qr-badge{padding:7px;}
+  #suhu-badge .sb-range{display:none;}
+  #right-panel{right:6px;}
+  .heat-section{width:clamp(120px,35vw,150px);}
+  .hs-title{font-size:9px;}
+  #organ-tags .organ-tag-bubble{padding:5px 8px;}
+  .otb-icon{font-size:13px;}
+  .otb-name{font-size:9px;}
+}
+@media(max-height:680px){
+  #tab-content{bottom:65px;}
+  #suhu-sim-box{padding:8px 12px;}
+  .ss-val{font-size:20px;margin-bottom:6px;}
+}
+</style>
+</head>
+<body>
+<canvas id="particle-canvas"></canvas>
+<div id="ui">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="qr-badge">
+      <div class="qr-box">📱</div>
+      <div><div class="qr-text">SCAN MARKER</div><div class="qr-sub">Marker Hiro</div></div>
+    </div>
+    <div id="header-center">
+      <div class="hg-title"><span>HEAT</span>GUARD AR</div>
+      <div class="hg-sub">Kenali Tubuh, Pahami Panas, Cegah Heatstroke</div>
+    </div>
+    <div id="suhu-badge">
+      <div class="sb-label">Suhu</div>
+      <div class="sb-val" id="suhu-header-val">36.5°C</div>
+      <div class="sb-range">36,5 – 37,5°C</div>
+    </div>
+  </div>
+
+  <!-- ORGAN TAGS — ditampilkan saat marker terdeteksi -->
+  <div id="organ-tags">
+    <!-- Posisi diatur via JS berdasarkan ukuran layar -->
+    <div class="organ-tag ot-otak" id="tag-otak" onclick="openOrganPopup('otak')">
+      <svg class="organ-arrow" id="arrow-otak" width="60" height="60"></svg>
+      <div class="organ-tag-bubble"><span class="otb-icon">🧠</span><span class="otb-name">Otak</span></div>
+    </div>
+    <div class="organ-tag ot-jantung" id="tag-jantung" onclick="openOrganPopup('jantung')">
+      <svg class="organ-arrow" id="arrow-jantung" width="60" height="60"></svg>
+      <div class="organ-tag-bubble"><span class="otb-icon">❤️</span><span class="otb-name">Jantung</span></div>
+    </div>
+    <div class="organ-tag ot-hati" id="tag-hati" onclick="openOrganPopup('hati')">
+      <svg class="organ-arrow" id="arrow-hati" width="60" height="60"></svg>
+      <div class="organ-tag-bubble"><span class="otb-icon">🫀</span><span class="otb-name">Hati</span></div>
+    </div>
+    <div class="organ-tag ot-pembuluh" id="tag-pembuluh" onclick="openOrganPopup('pembuluh')">
+      <svg class="organ-arrow" id="arrow-pembuluh" width="60" height="60"></svg>
+      <div class="organ-tag-bubble"><span class="otb-icon">🩸</span><span class="otb-name">Pembuluh Darah</span></div>
+    </div>
+    <div class="organ-tag ot-kulit" id="tag-kulit" onclick="openOrganPopup('kulit')">
+      <svg class="organ-arrow" id="arrow-kulit" width="60" height="60"></svg>
+      <div class="organ-tag-bubble"><span class="otb-icon">🩺</span><span class="otb-name">Kulit</span></div>
+    </div>
+  </div>
+
+  <!-- POPUP INFOGRAFIS -->
+  <div id="popup-overlay" onclick="closePopup()">
+    <div id="popup-card" onclick="event.stopPropagation()">
+      <button id="popup-close" onclick="closePopup()">✕</button>
+      <div class="popup-emoji" id="popup-emoji"></div>
+      <div class="popup-organ-name" id="popup-name"></div>
+      <div class="popup-organ-func" id="popup-func"></div>
+      <div class="popup-divider"></div>
+      <div class="popup-body" id="popup-body"></div>
+      <div class="popup-infogrid" id="popup-infogrid"></div>
+      <div class="popup-temp-tag" id="popup-tag"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="heat-section" id="hs-radiasi" onclick="toggleHeat('radiasi')">
+      <div class="heat-section-header">
+        <div class="heat-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+            <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+          </svg>
+        </div>
+        <div><div class="hs-title">☀️ Radiasi</div><div class="hs-sub">Tap aktifkan</div></div>
+      </div>
+      <div class="heat-section-body"><div class="hs-desc">Panas matahari dipancarkan langsung ke tubuh tanpa medium.</div></div>
+    </div>
+    <div class="heat-section" id="hs-konveksi" onclick="toggleHeat('konveksi')">
+      <div class="heat-section-header">
+        <div class="heat-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M3 12 Q7 8 12 12 Q17 16 21 12"/>
+            <path d="M3 8 Q7 4 12 8 Q17 12 21 8"/>
+            <path d="M3 16 Q7 12 12 16 Q17 20 21 16"/>
+          </svg>
+        </div>
+        <div><div class="hs-title">🌬️ Konveksi</div><div class="hs-sub">Tap aktifkan</div></div>
+      </div>
+      <div class="heat-section-body"><div class="hs-desc">Udara panas mengelilingi dan membawa kalor ke tubuh.</div></div>
+    </div>
+    <div class="heat-section" id="hs-konduksi" onclick="toggleHeat('konduksi')">
+      <div class="heat-section-header">
+        <div class="heat-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="6"/>
+            <polyline points="8 10 12 6 16 10"/>
+            <line x1="6" y1="20" x2="18" y2="20"/>
+          </svg>
+        </div>
+        <div><div class="hs-title">🦶 Konduksi</div><div class="hs-sub">Tap aktifkan</div></div>
+      </div>
+      <div class="heat-section-body"><div class="hs-desc">Panas aspal/tanah berpindah ke kaki melalui kontak.</div></div>
+    </div>
+  </div>
+
+  <!-- TAB CONTENT -->
+  <div id="tab-content">
+    <div class="tab-panel active" id="panel-0">
+      <div id="panel-struktur">
+        <div id="suhu-sim-box">
+          <div class="ss-label">🌡️ Suhu Tubuh (Real-time)</div>
+          <div class="ss-val" id="sim-val">36.5°C</div>
+          <input type="range" id="sim-slider" min="350" max="420" value="365" step="1">
+          <div class="sim-range"><span>35°C</span><span>37°C</span><span>39°C</span><span>41°C</span></div>
+          <div id="sim-status">Status: NORMAL</div>
+        </div>
+        <div id="legenda">
+          <div class="lg-title">Keterangan</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#FF6B00"></div>Radiasi</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#4DB8FF"></div>Konveksi</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#FFD700"></div>Konduksi</div>
+          <div class="lg-item"><div class="lg-dot" style="background:#4DF0A0"></div>Pendinginan</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-1">
+      <div class="info-tab-panel">
+        <div class="itp-title">🔥 Perpindahan Kalor</div>
+        <div class="itp-grid">
+          <div class="itp-card"><div class="ic-icon">☀️</div><div class="ic-title" style="color:#FF8050">Radiasi</div><div class="ic-body">Gelombang elektromagnetik dari matahari langsung ke tubuh.</div></div>
+          <div class="itp-card"><div class="ic-icon">🌬️</div><div class="ic-title" style="color:#4DB8FF">Konveksi</div><div class="ic-body">Udara panas membawa kalor melalui aliran udara.</div></div>
+          <div class="itp-card"><div class="ic-icon">🦶</div><div class="ic-title" style="color:#FFB830">Konduksi</div><div class="ic-body">Aspal 60–70°C memindahkan panas ke kaki secara langsung.</div></div>
+          <div class="itp-card"><div class="ic-icon">💡</div><div class="ic-title" style="color:#C0AAFF">Tips</div><div class="ic-body">Tap panel kanan untuk aktifkan animasi AR.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-2">
+      <div class="info-tab-panel">
+        <div class="itp-title">💧 Pendinginan Tubuh</div>
+        <div class="itp-list">
+          <div class="itp-item"><div class="ii-dot" style="background:#4DF0A0"></div>Keringat menguap → membawa kalor keluar tubuh.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#4DB8FF"></div>Vasodilatasi → pembuluh melebar, panas dilepas ke kulit.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#FF8080"></div>Hipotalamus mengatur otomatis saat suhu tubuh naik.</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-3">
+      <div class="info-tab-panel">
+        <div class="itp-title">💧 Dehidrasi</div>
+        <div class="itp-list">
+          <div class="itp-item"><div class="ii-dot" style="background:#4DB8FF"></div>Tubuh kehilangan lebih banyak cairan daripada yang masuk.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#FFB830"></div><b style="color:#FFD060">Gejala:</b> Haus, lemas, pusing, mulut kering.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#4DF0A0"></div><b style="color:#4DF0A0">Cegah:</b> Minum 2–3 liter/hari, lebih banyak saat panas.</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-panel" id="panel-4">
+      <div class="info-tab-panel" style="border-color:rgba(255,77,77,0.3);">
+        <div class="itp-title" style="color:#FF8080">🚨 Heatstroke</div>
+        <div class="itp-list">
+          <div class="itp-item"><div class="ii-dot" style="background:#FF4D4D"></div>Suhu tubuh melebihi <b style="color:#FF8080">40°C</b>, tubuh tidak mampu mendinginkan diri.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#FFB830"></div><b style="color:#FFD060">Gejala:</b> Wajah memerah, pusing, bingung, tidak berkeringat.</div>
+          <div class="itp-item"><div class="ii-dot" style="background:#4DF0A0"></div><b style="color:#4DF0A0">Pertolongan:</b> Tempat teduh, kompres dingin, hubungi 119.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <div id="tab-bar">
+      <div class="tab-btn active" onclick="goTab(0)"><div class="tb-icon">🫀</div>Struktur</div>
+      <div class="tab-btn" onclick="goTab(1)"><div class="tb-icon">🔥</div>Kalor</div>
+      <div class="tab-btn" onclick="goTab(2)"><div class="tb-icon">💧</div>Pendinginan</div>
+      <div class="tab-btn" onclick="goTab(3)"><div class="tb-icon">🥤</div>Dehidrasi</div>
+      <div class="tab-btn" onclick="goTab(4)"><div class="tb-icon">🚨</div>Heatstroke</div>
+    </div>
+  </div>
+
+  <div id="scan-hint">📷 Arahkan ke marker Hiro — organ muncul otomatis</div>
+</div>
+
+<!-- A-FRAME -->
+<a-scene embedded
+  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+  renderer="logarithmicDepthBuffer: true; antialias: true;"
+  vr-mode-ui="enabled: false"
+  style="position:fixed;top:0;left:0;z-index:1;width:100%;height:100%;">
+  <a-assets>
+    <a-asset-item id="anatomi-model"  src="anatomi.glb"></a-asset-item>
+    <a-asset-item id="matahari-model" src="matahari.glb"></a-asset-item>
+  </a-assets>
+  <a-marker preset="hiro" id="main-marker">
+    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.1 0.1 0.1" position="0 0.5 0" rotation="0 0 0"></a-entity>
+    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.005 0.005 0.005" position="-3.0 3.5 -0.5"
+      animation="property:rotation;from:0 0 0;to:0 360 0;dur:8000;loop:true;easing:linear"></a-entity>
+
+    <!-- PANAH RADIASI: dari matahari (-3 3.5) ke tubuh (0 0.5) -->
+      <a-entity id="layer-radiasi" visible="false">
+      <!-- panah 1: paling kiri atas, curam ke bawah -->
+      <a-entity position="-2.8 2.7 0" rotation="0 0 15">
+        <a-cylinder color="#FF4D4D" radius="0.04" height="1.2" position="0 0 0"
+          animation="property:position;to:-0.15 -0.50 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
+        <a-cone color="#FF4D4D" radius-bottom="0.10" radius-top="0" height="0.22" position="0 -0.70 0"
+          animation="property:position;to:-0.15 -1.20 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
+      </a-entity>
+      <!-- panah 2: tengah, sedikit miring -->
+      <a-entity position="-2.0 2.7 0" rotation="0 0 25">
+        <a-cylinder color="#FF6B6B" radius="0.032" height="1.0" position="0 0 0"
+          animation="property:position;to:-0.25 -0.45 0;dur:900;loop:true;easing:easeInQuad;delay:250"></a-cylinder>
+        <a-cone color="#FF6B6B" radius-bottom="0.08" radius-top="0" height="0.18" position="0 -0.60 0"
+          animation="property:position;to:-0.25 -1.05 0;dur:900;loop:true;easing:easeInQuad;delay:250"></a-cone>
+      </a-entity>
+      <!-- panah 3: paling kanan, lebih miring -->
+      <a-entity position="-1.2 2.7 0" rotation="0 0 38">
+        <a-cylinder color="#FF4D4D" radius="0.028" height="0.90" position="0 0 0"
+          animation="property:position;to:-0.35 -0.40 0;dur:1000;loop:true;easing:easeInQuad;delay:120"></a-cylinder>
+        <a-cone color="#FF4D4D" radius-bottom="0.07" radius-top="0" height="0.16" position="0 -0.55 0"
+          animation="property:position;to:-0.35 -0.95 0;dur:1000;loop:true;easing:easeInQuad;delay:120"></a-cone>
+      </a-entity>
+    </a-entity>
+
+
+    <!-- PANAH KONVEKSI: dari kiri & kanan ke tubuh -->
+    <a-entity id="layer-konveksi" visible="false">
+      <a-entity position="-1.6 1.0 0" rotation="0 0 90">
+        <a-cylinder color="#4DB8FF" radius="0.035" height="0.70" position="0 0 0"
+          animation="property:position;to:0.55 0 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cylinder>
+        <a-cone color="#4DB8FF" radius-bottom="0.09" radius-top="0" height="0.18" position="0 0.44 0"
+          animation="property:position;to:0.55 0.44 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cone>
+      </a-entity>
+      <a-entity position="-1.6 0.3 0" rotation="0 0 90">
+        <a-cylinder color="#6EC6FF" radius="0.028" height="0.70" position="0 0 0"
+          animation="property:position;to:0.55 0 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cylinder>
+        <a-cone color="#6EC6FF" radius-bottom="0.07" radius-top="0" height="0.15" position="0 0.44 0"
+          animation="property:position;to:0.55 0.44 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cone>
+      </a-entity>
+      <a-entity position="1.6 1.0 0" rotation="0 0 -90">
+        <a-cylinder color="#4DB8FF" radius="0.035" height="0.70" position="0 0 0"
+          animation="property:position;to:-0.55 0 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cylinder>
+        <a-cone color="#4DB8FF" radius-bottom="0.09" radius-top="0" height="0.18" position="0 0.44 0"
+          animation="property:position;to:-0.55 0.44 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cone>
+      </a-entity>
+      <a-entity position="1.6 0.3 0" rotation="0 0 -90">
+        <a-cylinder color="#6EC6FF" radius="0.028" height="0.70" position="0 0 0"
+          animation="property:position;to:-0.55 0 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cylinder>
+        <a-cone color="#6EC6FF" radius-bottom="0.07" radius-top="0" height="0.15" position="0 0.44 0"
+          animation="property:position;to:-0.55 0.44 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cone>
+      </a-entity>
+    </a-entity>
+
+    <!-- PANAH KONDUKSI: dari bawah ke kaki -->
+    <a-entity id="layer-konduksi" visible="false">
+      <a-entity position="0 -3.2 0">
+        <a-cylinder color="#FFB830" radius="0.042" height="0.80" position="0 0 0"
+          animation="property:position;to:0 0.65 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
+        <a-cone color="#FFB830" radius-bottom="0.10" radius-top="0" height="0.22" position="0 0.50 0"
+          animation="property:position;to:0 1.15 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
+      </a-entity>
+      <a-entity position="-0.35 -3.2 0">
+        <a-cylinder color="#FFD060" radius="0.032" height="0.70" position="0 0 0"
+          animation="property:position;to:0 0.58 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cylinder>
+        <a-cone color="#FFD060" radius-bottom="0.08" radius-top="0" height="0.18" position="0 0.44 0"
+          animation="property:position;to:0 1.02 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cone>
+      </a-entity>
+      <a-entity position="0.35 -3.2 0">
+        <a-cylinder color="#FFB830" radius="0.032" height="0.70" position="0 0 0"
+          animation="property:position;to:0 0.58 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cylinder>
+        <a-cone color="#FFB830" radius-bottom="0.08" radius-top="0" height="0.18" position="0 0.44 0"
+          animation="property:position;to:0 1.02 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cone>
+      </a-entity>
+    </a-entity>
+
+  </a-marker>
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+// ── Z-INDEX FIX ──
+function fixZIndex(){
+  document.querySelectorAll('canvas:not(#particle-canvas)').forEach(c=>{c.style.position='fixed';c.style.zIndex='1';});
+  const sc=document.querySelector('a-scene');if(sc)sc.style.zIndex='1';
+  document.getElementById('ui').style.zIndex='9999';
+  document.getElementById('particle-canvas').style.zIndex='500';
+}
+fixZIndex();[500,1500,3000].forEach(t=>setTimeout(fixZIndex,t));
+
+// ══ ORGAN DATA ══
+const organData = {
+  otak:{
+    emoji:'🧠', name:'Otak (Hipotalamus)', func:'Pusat pengatur suhu tubuh',
+    body:'Hipotalamus mendeteksi perubahan suhu dan mengatur produksi keringat serta aliran darah agar suhu tetap 36,5–37,5°C.',
+    info:[
+      {icon:'🌡️',title:'Deteksi Suhu',body:'Sensor di hipotalamus mendeteksi perubahan suhu darah 0,1°C saja.'},
+      {icon:'💦',title:'Picu Keringat',body:'Sinyal ke kelenjar keringat untuk produksi keringat pendingin.'},
+      {icon:'🩸',title:'Vasodilatasi',body:'Perintah ke pembuluh darah untuk melebar agar panas keluar.'},
+      {icon:'⚠️',title:'Heatstroke',body:'Jika gagal mendinginkan, suhu otak naik dan terjadi kerusakan.'},
+    ],
+    tag:'🌡️ Suhu Normal: 36,5 – 37,5°C',
+    tagColor:'rgba(100,80,255,0.25)',tagBorder:'rgba(140,100,255,0.5)',tagText:'#C0AAFF'
+  },
+  jantung:{
+    emoji:'❤️', name:'Jantung', func:'Pompa darah & distribusi kalor',
+    body:'Saat suhu naik, jantung bekerja lebih cepat memompa darah ke permukaan kulit agar panas dilepas ke lingkungan.',
+    info:[
+      {icon:'🔄',title:'Pompa Lebih Cepat',body:'Detak jantung naik dari 70 ke 100+ bpm saat kepanasan.'},
+      {icon:'🩸',title:'Distribusi Darah',body:'Darah panas dipompa ke kulit untuk didinginkan.'},
+      {icon:'⚡',title:'Beban Meningkat',body:'Jantung bekerja 2–3x lebih keras saat suhu tubuh naik.'},
+      {icon:'🚨',title:'Risiko',body:'Heatstroke bisa menyebabkan gagal jantung pada kasus parah.'},
+    ],
+    tag:'❤️ Normal: 60–100 bpm | Heatstroke: 150+ bpm',
+    tagColor:'rgba(255,60,80,0.20)',tagBorder:'rgba(255,80,100,0.4)',tagText:'#FF8090'
+  },
+  hati:{
+    emoji:'🫀', name:'Hati (Liver)', func:'Metabolisme & pengatur panas internal',
+    body:'Hati menghasilkan ~70% panas tubuh saat istirahat. Saat panas, hati memperlambat metabolisme agar tidak tambah panas.',
+    info:[
+      {icon:'🔥',title:'Sumber Panas',body:'Reaksi kimia di hati menghasilkan panas sebagai produk sampingan.'},
+      {icon:'🧪',title:'Detoksifikasi',body:'Saat stres panas, hati memproses lebih banyak toksin.'},
+      {icon:'⚖️',title:'Regulasi',body:'Hati menyesuaikan laju metabolisme untuk kurangi produksi panas.'},
+      {icon:'💧',title:'Cairan',body:'Hati membantu mengatur keseimbangan cairan tubuh saat dehidrasi.'},
+    ],
+    tag:'🌡️ Hati hasilkan ~70% panas tubuh saat istirahat',
+    tagColor:'rgba(180,80,20,0.20)',tagBorder:'rgba(220,130,40,0.4)',tagText:'#FFAA70'
+  },
+  pembuluh:{
+    emoji:'🩸', name:'Pembuluh Darah', func:'Distribusi panas & vasodilatasi',
+    body:'Pembuluh darah melebar (vasodilatasi) saat panas agar lebih banyak darah mengalir ke permukaan kulit dan melepas kalor.',
+    info:[
+      {icon:'↔️',title:'Vasodilatasi',body:'Diameter pembuluh melebar hingga 4x untuk alirkan lebih banyak darah.'},
+      {icon:'🌡️',title:'Pelepas Kalor',body:'Darah panas di kulit melepas kalor ke udara sekitar.'},
+      {icon:'🔴',title:'Wajah Memerah',body:'Lebih banyak darah di permukaan kulit menyebabkan kemerahan.'},
+      {icon:'📉',title:'Tekanan Darah',body:'Vasodilatasi bisa turunkan tekanan darah → pusing.'},
+    ],
+    tag:'🩸 Vasodilatasi meningkatkan pelepasan kalor 4–8x',
+    tagColor:'rgba(60,160,255,0.20)',tagBorder:'rgba(80,180,255,0.4)',tagText:'#7ACFFF'
+  },
+  kulit:{
+    emoji:'🩺', name:'Kulit', func:'Mengatur suhu & melepaskan kalor',
+    body:'Kulit adalah organ terbesar dan garis pertahanan utama pendinginan tubuh melalui produksi keringat.',
+    info:[
+      {icon:'💦',title:'Keringat',body:'2–4 liter keringat/hari dihasilkan oleh 2–4 juta kelenjar keringat.'},
+      {icon:'🌬️',title:'Evaporasi',body:'Penguapan keringat menyerap kalor dari kulit — efek pendingin alami.'},
+      {icon:'🌡️',title:'Sensor Suhu',body:'Reseptor di kulit mendeteksi panas dan dingin lalu kirim sinyal ke otak.'},
+      {icon:'☀️',title:'Paparan Radiasi',body:'Kulit gelap menyerap lebih banyak radiasi UV dari matahari.'},
+    ],
+    tag:'💦 Menghasilkan hingga 2–4 liter keringat/hari',
+    tagColor:'rgba(255,140,60,0.20)',tagBorder:'rgba(255,160,80,0.4)',tagText:'#FFB87A'
+  }
+};
+
+// ══ ORGAN TAG POSITIONS (% dari layar) ══
+// Disesuaikan dengan posisi model yang ada di tengah-kanan layar
+const tagPositions = {
+  otak:     { left:'62%', top:'18%', arrowDx:-40, arrowDy:40  },
+  jantung:  { left:'62%', top:'35%', arrowDx:-45, arrowDy:30  },
+  hati:     { left:'62%', top:'50%', arrowDx:-45, arrowDy:20  },
+  pembuluh: { left:'12%', top:'42%', arrowDx:45,  arrowDy:25  },
+  kulit:    { left:'12%', top:'62%', arrowDx:45,  arrowDy:-20 },
+};
+
+function positionTags(){
+  Object.entries(tagPositions).forEach(([key,pos])=>{
+    const tag = document.getElementById('tag-'+key);
+    if(!tag) return;
+    tag.style.left = pos.left;
+    tag.style.top  = pos.top;
+  });
+}
+positionTags();
+window.addEventListener('resize', positionTags);
+
+// Show/hide tags when marker found/lost
+let markerVisible = false;
+const marker = document.getElementById('main-marker');
+marker.addEventListener('markerFound',()=>{
+  markerVisible = true;
+  document.getElementById('scan-hint').style.display='none';
+  document.querySelectorAll('.organ-tag').forEach((t,i)=>{
+    setTimeout(()=>t.classList.add('visible'), i*120);
+  });
+});
+marker.addEventListener('markerLost',()=>{
+  markerVisible = false;
+  document.getElementById('scan-hint').style.display='block';
+  document.querySelectorAll('.organ-tag').forEach(t=>t.classList.remove('visible'));
+  particles.length = 0;
+});
+
+// ══ POPUP ORGAN ══
+function openOrganPopup(key){
+  const d = organData[key];
+  if(!d) return;
+  document.getElementById('popup-emoji').textContent = d.emoji;
+  document.getElementById('popup-name').textContent  = d.name;
+  document.getElementById('popup-func').textContent  = d.func;
+  document.getElementById('popup-body').textContent  = d.body;
+  // Infogrid
+  const grid = document.getElementById('popup-infogrid');
+  grid.innerHTML = d.info.map(c=>`
+    <div class="popup-infocard">
+      <div class="pic-icon">${c.icon}</div>
+      <div class="pic-title">${c.title}</div>
+      <div class="pic-body">${c.body}</div>
+    </div>`).join('');
+  const tag = document.getElementById('popup-tag');
+  tag.textContent = d.tag;
+  tag.style.cssText = `background:${d.tagColor};border:1px solid ${d.tagBorder};color:${d.tagText};display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;`;
+  document.getElementById('popup-overlay').classList.add('show');
+}
+function closePopup(){
+  document.getElementById('popup-overlay').classList.remove('show');
+}
+
+// ══ HEAT TOGGLE ══
+const heatState = {radiasi:false,konveksi:false,konduksi:false};
+function toggleHeat(layer){
+  heatState[layer] = !heatState[layer];
+  const active = heatState[layer];
+  setVis('layer-'+layer, active);
+  setVis('aura-'+layer,  active);
+  const sec = document.getElementById('hs-'+layer);
+  sec.classList.remove('active-radiasi','active-konveksi','active-konduksi');
+  sec.classList.toggle('open', active);
+  if(active) sec.classList.add('active-'+layer);
+  sec.querySelector('.hs-sub').textContent = active ? 'Tap nonaktifkan' : 'Tap aktifkan';
+}
+function setVis(id,val){ const el=document.getElementById(id); if(el) el.setAttribute('visible',val); }
+
+// ══ ZOOM & ROTATE ══
+let touchStartDist=0, touchStartScale=0.1, currentScale=0.1;
+let isDragging=false, lastTouchX=0, currentRotY=0;
+let mouseDown=false, lastMouseX=0;
+const getTubuh = ()=>document.getElementById('tubuh');
+
+document.addEventListener('touchstart',e=>{
+  if(e.target.closest('#ui')) return;
+  if(e.touches.length===2){
+    touchStartDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    touchStartScale=currentScale;
+  } else if(e.touches.length===1){ isDragging=true; lastTouchX=e.touches[0].clientX; }
+},{passive:true});
+
+document.addEventListener('touchmove',e=>{
+  if(e.target.closest('#ui')) return;
+  const t=getTubuh(); if(!t) return;
+  if(e.touches.length===2){
+    const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    currentScale=Math.min(0.25,Math.max(0.03,touchStartScale*(dist/touchStartDist)));
+    t.setAttribute('scale',`${currentScale} ${currentScale} ${currentScale}`);
+  } else if(e.touches.length===1&&isDragging){
+    const dx=e.touches[0].clientX-lastTouchX;
+    currentRotY+=dx*0.5; lastTouchX=e.touches[0].clientX;
+    t.setAttribute('rotation',`0 ${currentRotY} 0`);
+  }
+},{passive:true});
+
+document.addEventListener('touchend',e=>{ if(e.touches.length<2) isDragging=false; },{passive:true});
+
+document.addEventListener('mousedown',e=>{ if(e.target.closest('#ui')) return; mouseDown=true; lastMouseX=e.clientX; });
+document.addEventListener('mousemove',e=>{
+  if(!mouseDown) return;
+  const dx=e.clientX-lastMouseX; currentRotY+=dx*0.4; lastMouseX=e.clientX;
+  const t=getTubuh(); if(t) t.setAttribute('rotation',`0 ${currentRotY} 0`);
+});
+document.addEventListener('mouseup',()=>{ mouseDown=false; });
+document.addEventListener('wheel',e=>{
+  if(e.target.closest('#ui')) return;
+  const t=getTubuh(); if(!t) return;
+  currentScale=Math.min(0.25,Math.max(0.03,currentScale-e.deltaY*0.0001));
+  t.setAttribute('scale',`${currentScale} ${currentScale} ${currentScale}`);
+},{passive:true});
+
+// ══ SUHU SIMULATOR ══
+const simSlider=document.getElementById('sim-slider');
+const simVal=document.getElementById('sim-val');
+const simStatus=document.getElementById('sim-status');
+let currentTemp = 36.5;
+
+simSlider.addEventListener('input',function(){
+  const raw=parseInt(this.value);
+  currentTemp = raw/10;
+  simVal.textContent=currentTemp.toFixed(1)+'°C';
+  const pct=((raw-350)/70*100).toFixed(1);
+  let color,sText,sBg;
+  if(currentTemp<37.5){color='#4DF0A0';sText='NORMAL';sBg='rgba(40,220,120,0.20)';}
+  else if(currentTemp<38.5){color='#FFB830';sText='DEMAM';sBg='rgba(255,184,48,0.20)';}
+  else if(currentTemp<40){color='#FF8050';sText='DEMAM TINGGI';sBg='rgba(255,120,60,0.20)';}
+  else{color='#FF4D4D';sText='⚠️ HEATSTROKE';sBg='rgba(255,60,60,0.25)';}
+  simVal.style.color=color;
+  simStatus.textContent='Status: '+sText;
+  simStatus.style.cssText=`background:${sBg};border:1px solid ${color};color:${color};padding:3px 9px;border-radius:20px;font-size:9px;font-weight:700;display:inline-block;margin-top:6px;`;
+  this.style.background=`linear-gradient(to right,${color} ${pct}%,rgba(255,255,255,0.12) ${pct}%)`;
+  document.getElementById('suhu-header-val').textContent=currentTemp.toFixed(1)+'°C';
+  document.getElementById('suhu-header-val').style.color=color;
+});
+
+// ══ TAB ══
+function goTab(idx){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+}
+
+// ══ PARTICLE SYSTEM ══
+const pc=document.getElementById('particle-canvas');
+const ctx=pc.getContext('2d');
+const particles=[];
+
+function resizeCanvas(){ pc.width=window.innerWidth; pc.height=window.innerHeight; }
+resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+
+// Estimasi pusat model di layar (kanan-tengah)
+function getModelCenter(){
+  return { cx: pc.width*0.58, cy: pc.height*0.60 };
+}
+
+function getTempFactor(){ return Math.max(0,(currentTemp-36)/6); } // 0–1
+
+class Particle{
+  constructor(type){ this.type=type; this.reset(); }
+  reset(){
+    const {cx,cy}=getModelCenter();
+    const tf=getTempFactor();
+    const sp=1.2; // kecepatan KONSTAN, tidak terpengaruh suhu
+
+    if(this.type==='radiasi'){
+      const angle=-0.6+Math.random()*0.5;
+      const dist=pc.width*0.25+Math.random()*pc.width*0.12;
+      this.x=cx+Math.cos(Math.PI+angle)*dist;
+      this.y=cy+Math.sin(-0.8+angle)*dist;
+      const dx=cx+(Math.random()-0.5)*60-this.x;
+      const dy=cy+(Math.random()-0.5)*80-this.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||1;
+      this.vx=(dx/d)*(2+Math.random())*sp;
+      this.vy=(dy/d)*(2+Math.random())*sp;
+      this.r=2+Math.random()*3;
+      this.color=`hsl(${10+Math.random()*20},100%,${55+Math.random()*15}%)`;
+      this.maxLife=40+Math.random()*20;
+
+    } else if(this.type==='konveksi'){
+      const side=Math.random()<0.5?-1:1;
+      this.x=cx+side*(pc.width*0.22+Math.random()*pc.width*0.06);
+      this.y=cy-80+Math.random()*200;
+      this.vx=-side*(1.4+Math.random()*0.6)*sp;
+      this.vy=(Math.random()-0.5)*0.5*sp;
+      this.r=2+Math.random()*2.5;
+      this.color=`hsl(${200+Math.random()*20},80%,${60+Math.random()*15}%)`;
+      this.maxLife=50+Math.random()*25;
+
+    } else if(this.type==='konduksi'){
+      this.x=cx+(Math.random()-0.5)*100;
+      this.y=cy+pc.height*0.40+Math.random()*20;
+      this.vx=(Math.random()-0.5)*0.4*sp;
+      this.vy=-(1.5+Math.random())*sp;
+      this.r=2.5+Math.random()*3;
+      this.color=`hsl(${35+Math.random()*15},90%,${55+Math.random()*10}%)`;
+      this.maxLife=55+Math.random()*20;
+
+    } else if(this.type==='keringat'){
+      // muncul dari permukaan tubuh, menyebar keluar — makin banyak saat suhu naik
+      const angle=Math.random()*Math.PI*2;
+      const bodyR=60+Math.random()*40;
+      this.x=cx+Math.cos(angle)*bodyR;
+      this.y=cy+Math.sin(angle)*bodyR*1.8; // oval sesuai bentuk tubuh
+      // bergerak keluar dari tubuh
+      this.vx=Math.cos(angle)*(0.8+Math.random()*1.2);
+      this.vy=Math.sin(angle)*(0.8+Math.random()*1.2)*1.8 - 0.5; // sedikit ke atas (menguap)
+      this.r=1.5+Math.random()*2;
+      // warna: hijau-biru (keringat/evaporasi), makin merah saat heatstroke
+      const hue = tf < 0.6 ? 160+Math.random()*40 : 0+Math.random()*15;
+      this.color=`hsl(${hue},80%,${60+Math.random()*15}%)`;
+      this.maxLife=35+Math.random()*20;
+    }
+    this.life=Math.random()*this.maxLife;
+  }
+  update(){ this.life++; this.x+=this.vx; this.y+=this.vy; if(this.life>=this.maxLife) this.reset(); }
+  draw(){
+    const prog=this.life/this.maxLife;
+    const alpha=prog<0.15?prog/0.15:prog>0.70?1-(prog-0.70)/0.30:1;
+    ctx.save(); ctx.globalAlpha=alpha*0.85;
+    ctx.fillStyle=this.color; ctx.shadowColor=this.color; ctx.shadowBlur=7;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function targetParticleCount(type){
+  if(!markerVisible||!heatState[type]) return 0;
+  const tf=getTempFactor();
+  // panas masuk: jumlah konstan, tidak terpengaruh slider
+  if(type==='radiasi') return 6;
+  if(type==='konveksi') return 8;
+  if(type==='konduksi') return 6;
+  return 0;
+}
+
+function syncParticles(){
+  ['radiasi','konveksi','konduksi'].forEach(type=>{
+    const needed=targetParticleCount(type);
+    const current=particles.filter(p=>p.type===type);
+    if(current.length<needed){
+      for(let i=current.length;i<needed;i++) particles.push(new Particle(type));
+    } else if(current.length>needed){
+      let rem=current.length-needed;
+      for(let i=particles.length-1;i>=0&&rem>0;i--){
+        if(particles[i].type===type){particles.splice(i,1);rem--;}
+      }
+    }
+  });
+
+  // Partikel keringat — makin banyak saat suhu naik, muncul tanpa perlu toggle
+  const tf=getTempFactor();
+  const needKeringat = markerVisible ? Math.round(tf*30) : 0; // 0 saat normal, 30 saat heatstroke
+  const curKeringat=particles.filter(p=>p.type==='keringat');
+  if(curKeringat.length<needKeringat){
+    for(let i=curKeringat.length;i<needKeringat;i++) particles.push(new Particle('keringat'));
+  } else if(curKeringat.length>needKeringat){
+    let rem=curKeringat.length-needKeringat;
+    for(let i=particles.length-1;i>=0&&rem>0;i--){
+      if(particles[i].type==='keringat'){particles.splice(i,1);rem--;}
+    }
+  }
+}
+
+// ══ RENDER LOOP ══
+function loop(){
+  ctx.clearRect(0,0,pc.width,pc.height);
+  syncParticles();
+  particles.forEach(p=>{p.update();p.draw();});
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
