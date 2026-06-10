@@ -59,15 +59,15 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
 .organ-tag.visible{opacity:1;transform:scale(1);}
 .organ-tag-bubble{
   background:rgba(8,14,35,0.92);border:1px solid rgba(255,255,255,0.20);
-  border-radius:10px;padding:6px 10px;
-  display:flex;align-items:center;gap:6px;
+  border-radius:8px;padding:4px 8px;
+  display:flex;align-items:center;gap:5px;
   backdrop-filter:blur(10px);white-space:nowrap;
-  transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.4);
 }
 .organ-tag-bubble:hover{background:rgba(20,35,80,0.95);border-color:rgba(255,255,255,0.40);}
 .organ-tag-bubble:active{transform:scale(0.94);}
-.otb-icon{font-size:16px;}
-.otb-name{font-size:10px;font-weight:700;color:#fff;}
+.otb-icon{font-size:13px;}
+.otb-name{font-size:9px;font-weight:700;color:#fff;}
 /* arrow line dari bubble ke tubuh — dibuat via SVG absolute */
 .organ-arrow{position:absolute;pointer-events:none;overflow:visible;}
 
@@ -601,11 +601,11 @@ const organData = {
 
 // ══ ORGAN TAG POSITIONS (% dari layar) ══
 const tagPositions = {
-  otak:     { left:'2%', top:'18%' },
-  jantung:  { left:'2%', top:'30%' },
+  otak:     { left:'2%', top:'22%' },
+  jantung:  { left:'2%', top:'32%' },
   hati:     { left:'2%', top:'42%' },
-  pembuluh: { left:'2%', top:'54%' },
-  kulit:    { left:'2%', top:'66%' },
+  pembuluh: { left:'2%', top:'52%' },
+  kulit:    { left:'2%', top:'62%' },
 };
 
 function positionTags(){
