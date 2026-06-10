@@ -817,18 +817,34 @@ class Particle{
       this.maxLife=55+Math.random()*20;
 
     } else if(this.type==='keringat'){
-      // muncul dari permukaan tubuh, menyebar keluar — makin banyak saat suhu naik
       const angle=Math.random()*Math.PI*2;
       const bodyR=60+Math.random()*40;
       this.x=cx+Math.cos(angle)*bodyR;
-      this.y=cy+Math.sin(angle)*bodyR*1.8; // oval sesuai bentuk tubuh
-      // bergerak keluar dari tubuh
-      this.vx=Math.cos(angle)*(0.8+Math.random()*1.2);
-      this.vy=Math.sin(angle)*(0.8+Math.random()*1.2)*1.8 - 0.5; // sedikit ke atas (menguap)
-      this.r=3+Math.random()*3;
-      const hue = tf < 0.6 ? 160+Math.random()*40 : 0+Math.random()*15;
-      this.color=`hsl(${hue},100%,${70+Math.random()*20}%)`;
-      this.maxLife=45+Math.random()*20;
+      this.y=cy+Math.sin(angle)*bodyR*1.8;
+      const temp=currentTemp;
+      let hue,sat,lit,speed,size;
+      if(temp<37.5){
+        // Normal: keringat sedikit, hijau tenang
+        hue=150+Math.random()*30; sat=80; lit=65;
+        speed=0.8; size=2+Math.random()*2;
+      } else if(temp<38.5){
+        // Demam: keringat meningkat, biru-putih
+        hue=190+Math.random()*30; sat=90; lit=72;
+        speed=1.2; size=2.5+Math.random()*2.5;
+      } else if(temp<40){
+        // Demam tinggi: keringat maksimal, kuning-oranye
+        hue=30+Math.random()*25; sat=100; lit=68;
+        speed=1.6; size=3+Math.random()*3;
+      } else {
+        // Heatstroke: keringat berhenti, merah berpendar
+        hue=0+Math.random()*15; sat=100; lit=60;
+        speed=0.4; size=4+Math.random()*3;
+      }
+      this.vx=Math.cos(angle)*speed*(0.8+Math.random()*0.4);
+      this.vy=Math.sin(angle)*speed*(0.8+Math.random()*0.4)*1.8 - 0.5;
+      this.r=size;
+      this.color=`hsl(${hue},${sat}%,${lit}%)`;
+      this.maxLife=temp>=40 ? 25+Math.random()*15 : 45+Math.random()*20;
     }
     this.life=Math.random()*this.maxLife;
   }
@@ -856,7 +872,13 @@ function targetParticleCount(type){
 function syncParticles(){
   // Partikel keringat — makin banyak saat suhu naik, muncul tanpa perlu toggle
   const tf=getTempFactor();
-  const needKeringat = markerVisible ? Math.round(tf*30) : 0; // 0 saat normal, 30 saat heatstroke
+  let needKeringat = 0;
+  if(markerVisible){
+    if(currentTemp < 37.5)      needKeringat = 5;
+    else if(currentTemp < 38.5) needKeringat = 15;
+    else if(currentTemp < 40)   needKeringat = 30;
+    else                         needKeringat = 8; // heatstroke: sedikit, merah
+  }
   const curKeringat=particles.filter(p=>p.type==='keringat');
   if(curKeringat.length<needKeringat){
     for(let i=curKeringat.length;i<needKeringat;i++) particles.push(new Particle('keringat'));
