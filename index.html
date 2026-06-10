@@ -825,11 +825,10 @@ class Particle{
       // bergerak keluar dari tubuh
       this.vx=Math.cos(angle)*(0.8+Math.random()*1.2);
       this.vy=Math.sin(angle)*(0.8+Math.random()*1.2)*1.8 - 0.5; // sedikit ke atas (menguap)
-      this.r=1.5+Math.random()*2;
-      // warna: hijau-biru (keringat/evaporasi), makin merah saat heatstroke
+      this.r=3+Math.random()*3;
       const hue = tf < 0.6 ? 160+Math.random()*40 : 0+Math.random()*15;
-      this.color=`hsl(${hue},80%,${60+Math.random()*15}%)`;
-      this.maxLife=35+Math.random()*20;
+      this.color=`hsl(${hue},100%,${70+Math.random()*20}%)`;
+      this.maxLife=45+Math.random()*20;
     }
     this.life=Math.random()*this.maxLife;
   }
