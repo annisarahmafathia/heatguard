@@ -116,6 +116,9 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
 .pic-icon{font-size:18px;margin-bottom:3px;}
 .pic-title{font-size:10px;font-weight:700;margin-bottom:2px;}
 .pic-body{font-size:9.5px;color:rgba(255,255,255,0.55);line-height:1.45;}
+#popup-card, #popup-card * {
+  color: #fff;
+}
 
 /* ── HEAT PANEL (kanan) ── */
 #right-panel{
@@ -398,6 +401,18 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
         </div>
       </div>
     </div>
+    <div class="tab-panel" id="panel-5">
+    <div class="info-tab-panel" style="border-color:rgba(77,184,255,0.3);">
+      <div class="itp-title" style="color:#7ACFFF">🥶 Hipotermia</div>
+      <div class="itp-list">
+        <div class="itp-item"><div class="ii-dot" style="background:#4DB8FF"></div>Terjadi saat suhu tubuh turun di bawah <b style="color:#7ACFFF">35°C</b> dan tubuh tidak mampu menghangatkan diri kembali.</div>
+        <div class="itp-item"><div class="ii-dot" style="background:#6EC6FF"></div><b style="color:#a0d8ff">Penyebab:</b> Paparan dingin ekstrem, kehujanan lama, berendam air dingin, angin kencang.</div>
+        <div class="itp-item"><div class="ii-dot" style="background:#FFB830"></div><b style="color:#FFD060">Gejala:</b> Menggigil hebat, kulit pucat, kebingungan, bicara pelo, gerakan lamban.</div>
+        <div class="itp-item"><div class="ii-dot" style="background:#FF6060"></div><b style="color:#FF8080">Parah:</b> Menggigil berhenti (tanda buruk), detak jantung & napas melambat, tidak sadar.</div>
+        <div class="itp-item"><div class="ii-dot" style="background:#4DF0A0"></div><b style="color:#4DF0A0">Pertolongan:</b> Pindahkan ke tempat hangat, ganti pakaian basah, selimut tebal, minuman hangat (jika sadar), hubungi 119.</div>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -408,6 +423,7 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
       <div class="tab-btn" onclick="goTab(2)"><div class="tb-icon">💧</div>Pendinginan</div>
       <div class="tab-btn" onclick="goTab(3)"><div class="tb-icon">🥤</div>Dehidrasi</div>
       <div class="tab-btn" onclick="goTab(4)"><div class="tb-icon">🚨</div>Heatstroke</div>
+      <div class="tab-btn" onclick="goTab(5)"><div class="tb-icon">🥶</div>Hipotermia</div>
     </div>
   </div>
 
@@ -429,8 +445,8 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
       smoothCount="10" 
       smoothTolerance="0.01" 
       smoothThreshold="5">
-    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.01 0.01 0.01" position="0 0.5 0" rotation="0 0 0"></a-entity>
-    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.005 0.005 0.005" position="-3.0 3.5 -0.5"
+    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.0015 0.0015 0.0015" position="0 0.5 0" rotation="0 0 0"></a-entity>
+    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.003 0.003 0.003" position="-2.0 3.5 -0.5"
       animation="property:rotation;from:0 0 0;to:0 360 0;dur:8000;loop:true;easing:linear"></a-entity>
 
     <!-- PANAH RADIASI: dari matahari (-3 3.5) ke tubuh (0 0.5) -->
@@ -609,18 +625,18 @@ window.addEventListener('resize', positionTags);
 
 // Show/hide tags when marker found/lost
 let markerVisible = false;
+document.querySelectorAll('.organ-tag').forEach((t,i)=>{
+  setTimeout(()=>t.classList.add('visible'), i*120);
+});
+
 const marker = document.getElementById('main-marker');
 marker.addEventListener('markerFound',()=>{
   markerVisible = true;
   document.getElementById('scan-hint').style.display='none';
-  document.querySelectorAll('.organ-tag').forEach((t,i)=>{
-    setTimeout(()=>t.classList.add('visible'), i*120);
-  });
 });
 marker.addEventListener('markerLost',()=>{
   markerVisible = false;
   document.getElementById('scan-hint').style.display='block';
-  document.querySelectorAll('.organ-tag').forEach(t=>t.classList.remove('visible'));
   particles.length = 0;
 });
 
@@ -666,8 +682,8 @@ function setVis(id,val){ const el=document.getElementById(id); if(el) el.setAttr
 
 // ══ ZOOM & ROTATE ══
 let touchStartDist=0, touchStartScale=0.1, currentScale=0.1;
-let isDragging=false, lastTouchX=0, currentRotY=0;
-let mouseDown=false, lastMouseX=0;
+let isDragging=false, lastTouchX=0, lastTouchY=0, currentRotY=0, currentRotX=0;
+let mouseDown=false, lastMouseX=0, lastMouseY=0;
 const getTubuh = ()=>document.getElementById('tubuh');
 
 document.addEventListener('touchstart',e=>{
@@ -685,20 +701,31 @@ document.addEventListener('touchmove',e=>{
     const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
     currentScale=Math.min(0.25,Math.max(0.03,touchStartScale*(dist/touchStartDist)));
     t.setAttribute('scale',`${currentScale} ${currentScale} ${currentScale}`);
-  } else if(e.touches.length===1&&isDragging){
-    const dx=e.touches[0].clientX-lastTouchX;
-    currentRotY+=dx*0.5; lastTouchX=e.touches[0].clientX;
-    t.setAttribute('rotation',`0 ${currentRotY} 0`);
+  } else if(e.touches.length===1){ 
+  isDragging=true; 
+  lastTouchX=e.touches[0].clientX; 
+  lastTouchY=e.touches[0].clientY;
   }
 },{passive:true});
 
 document.addEventListener('touchend',e=>{ if(e.touches.length<2) isDragging=false; },{passive:true});
 
-document.addEventListener('mousedown',e=>{ if(e.target.closest('#ui')) return; mouseDown=true; lastMouseX=e.clientX; });
+document.addEventListener('mousedown',e=>{ 
+  if(e.target.closest('#ui')) return; 
+  mouseDown=true; 
+  lastMouseX=e.clientX;
+  lastMouseY=e.clientY;
+});
 document.addEventListener('mousemove',e=>{
   if(!mouseDown) return;
-  const dx=e.clientX-lastMouseX; currentRotY+=dx*0.4; lastMouseX=e.clientX;
-  const t=getTubuh(); if(t) t.setAttribute('rotation',`0 ${currentRotY} 0`);
+  const dx=e.clientX-lastMouseX;
+  const dy=e.clientY-lastMouseY;
+  currentRotY+=dx*0.4;
+  currentRotX-=dy*0.4;
+  currentRotX=Math.max(-80,Math.min(80,currentRotX));
+  lastMouseX=e.clientX;
+  lastMouseY=e.clientY;
+  const t=getTubuh(); if(t) t.setAttribute('rotation',`${currentRotX} ${currentRotY} 0`);
 });
 document.addEventListener('mouseup',()=>{ mouseDown=false; });
 document.addEventListener('wheel',e=>{
