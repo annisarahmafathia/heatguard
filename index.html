@@ -854,19 +854,6 @@ function targetParticleCount(type){
 }
 
 function syncParticles(){
-  ['radiasi','konveksi','konduksi'].forEach(type=>{
-    const needed=targetParticleCount(type);
-    const current=particles.filter(p=>p.type===type);
-    if(current.length<needed){
-      for(let i=current.length;i<needed;i++) particles.push(new Particle(type));
-    } else if(current.length>needed){
-      let rem=current.length-needed;
-      for(let i=particles.length-1;i>=0&&rem>0;i--){
-        if(particles[i].type===type){particles.splice(i,1);rem--;}
-      }
-    }
-  });
-
   // Partikel keringat — makin banyak saat suhu naik, muncul tanpa perlu toggle
   const tf=getTempFactor();
   const needKeringat = markerVisible ? Math.round(tf*30) : 0; // 0 saat normal, 30 saat heatstroke
