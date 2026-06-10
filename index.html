@@ -445,83 +445,79 @@ a-scene{position:fixed;top:0;left:0;z-index:1;}
       smoothCount="10" 
       smoothTolerance="0.01" 
       smoothThreshold="5">
-    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.0015 0.0015 0.0015" position="0 0.5 0" rotation="0 0 0"></a-entity>
-    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.003 0.003 0.003" position="-2.0 3.5 -0.5"
+    <a-entity id="tubuh" gltf-model="#anatomi-model" scale="0.015 0.015 0.015" position="0 0.5 0" rotation="0 0 0"></a-entity>
+    <a-entity id="matahari" gltf-model="#matahari-model" scale="0.002 0.002 0.002" position="-0.8 1.8 -0.3"
       animation="property:rotation;from:0 0 0;to:0 360 0;dur:8000;loop:true;easing:linear"></a-entity>
 
     <!-- PANAH RADIASI: dari matahari (-3 3.5) ke tubuh (0 0.5) -->
       <a-entity id="layer-radiasi" visible="false">
-      <!-- panah 1: paling kiri atas, curam ke bawah -->
-      <a-entity position="-2.8 2.7 0" rotation="0 0 15">
-        <a-cylinder color="#FF4D4D" radius="0.04" height="1.2" position="0 0 0"
-          animation="property:position;to:-0.15 -0.50 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
-        <a-cone color="#FF4D4D" radius-bottom="0.10" radius-top="0" height="0.22" position="0 -0.70 0"
-          animation="property:position;to:-0.15 -1.20 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
+      <a-entity position="-1.0 1.5 0" rotation="0 0 20">
+        <a-cylinder color="#FF4D4D" radius="0.015" height="0.5" position="0 0 0"
+          animation="property:position;to:-0.08 -0.20 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
+        <a-cone color="#FF4D4D" radius-bottom="0.04" radius-top="0" height="0.09" position="0 -0.30 0"
+          animation="property:position;to:-0.08 -0.50 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
       </a-entity>
-      <!-- panah 2: tengah, sedikit miring -->
-      <a-entity position="-2.0 2.7 0" rotation="0 0 25">
-        <a-cylinder color="#FF6B6B" radius="0.032" height="1.0" position="0 0 0"
-          animation="property:position;to:-0.25 -0.45 0;dur:900;loop:true;easing:easeInQuad;delay:250"></a-cylinder>
-        <a-cone color="#FF6B6B" radius-bottom="0.08" radius-top="0" height="0.18" position="0 -0.60 0"
-          animation="property:position;to:-0.25 -1.05 0;dur:900;loop:true;easing:easeInQuad;delay:250"></a-cone>
+      <a-entity position="-0.7 1.5 0" rotation="0 0 30">
+        <a-cylinder color="#FF6B6B" radius="0.012" height="0.45" position="0 0 0"
+          animation="property:position;to:-0.12 -0.18 0;dur:900;loop:true;easing:easeInQuad;delay:200"></a-cylinder>
+        <a-cone color="#FF6B6B" radius-bottom="0.032" radius-top="0" height="0.08" position="0 -0.27 0"
+          animation="property:position;to:-0.12 -0.45 0;dur:900;loop:true;easing:easeInQuad;delay:200"></a-cone>
       </a-entity>
-      <!-- panah 3: paling kanan, lebih miring -->
-      <a-entity position="-1.2 2.7 0" rotation="0 0 38">
-        <a-cylinder color="#FF4D4D" radius="0.028" height="0.90" position="0 0 0"
-          animation="property:position;to:-0.35 -0.40 0;dur:1000;loop:true;easing:easeInQuad;delay:120"></a-cylinder>
-        <a-cone color="#FF4D4D" radius-bottom="0.07" radius-top="0" height="0.16" position="0 -0.55 0"
-          animation="property:position;to:-0.35 -0.95 0;dur:1000;loop:true;easing:easeInQuad;delay:120"></a-cone>
+      <a-entity position="-0.4 1.5 0" rotation="0 0 42">
+        <a-cylinder color="#FF4D4D" radius="0.010" height="0.40" position="0 0 0"
+          animation="property:position;to:-0.16 -0.16 0;dur:1000;loop:true;easing:easeInQuad;delay:100"></a-cylinder>
+        <a-cone color="#FF4D4D" radius-bottom="0.028" radius-top="0" height="0.07" position="0 -0.24 0"
+          animation="property:position;to:-0.16 -0.40 0;dur:1000;loop:true;easing:easeInQuad;delay:100"></a-cone>
       </a-entity>
     </a-entity>
 
-
     <!-- PANAH KONVEKSI: dari kiri & kanan ke tubuh -->
     <a-entity id="layer-konveksi" visible="false">
-      <a-entity position="-1.6 1.0 0" rotation="0 0 90">
-        <a-cylinder color="#4DB8FF" radius="0.035" height="0.70" position="0 0 0"
-          animation="property:position;to:0.55 0 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cylinder>
-        <a-cone color="#4DB8FF" radius-bottom="0.09" radius-top="0" height="0.18" position="0 0.44 0"
-          animation="property:position;to:0.55 0.44 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cone>
+      <a-entity position="-0.7 0.5 0" rotation="0 0 90">
+        <a-cylinder color="#4DB8FF" radius="0.013" height="0.30" position="0 0 0"
+          animation="property:position;to:0.22 0 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cylinder>
+        <a-cone color="#4DB8FF" radius-bottom="0.034" radius-top="0" height="0.07" position="0 0.19 0"
+          animation="property:position;to:0.22 0.19 0;dur:700;loop:true;dir:alternate;easing:easeInOutSine"></a-cone>
       </a-entity>
-      <a-entity position="-1.6 0.3 0" rotation="0 0 90">
-        <a-cylinder color="#6EC6FF" radius="0.028" height="0.70" position="0 0 0"
-          animation="property:position;to:0.55 0 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cylinder>
-        <a-cone color="#6EC6FF" radius-bottom="0.07" radius-top="0" height="0.15" position="0 0.44 0"
-          animation="property:position;to:0.55 0.44 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cone>
+      <a-entity position="-0.7 0.15 0" rotation="0 0 90">
+        <a-cylinder color="#6EC6FF" radius="0.010" height="0.28" position="0 0 0"
+          animation="property:position;to:0.22 0 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cylinder>
+        <a-cone color="#6EC6FF" radius-bottom="0.028" radius-top="0" height="0.06" position="0 0.18 0"
+          animation="property:position;to:0.22 0.18 0;dur:900;loop:true;dir:alternate;easing:easeInOutSine;delay:150"></a-cone>
       </a-entity>
-      <a-entity position="1.6 1.0 0" rotation="0 0 -90">
-        <a-cylinder color="#4DB8FF" radius="0.035" height="0.70" position="0 0 0"
-          animation="property:position;to:-0.55 0 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cylinder>
-        <a-cone color="#4DB8FF" radius-bottom="0.09" radius-top="0" height="0.18" position="0 0.44 0"
-          animation="property:position;to:-0.55 0.44 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cone>
+      <a-entity position="0.7 0.5 0" rotation="0 0 -90">
+        <a-cylinder color="#4DB8FF" radius="0.013" height="0.30" position="0 0 0"
+          animation="property:position;to:-0.22 0 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cylinder>
+        <a-cone color="#4DB8FF" radius-bottom="0.034" radius-top="0" height="0.07" position="0 0.19 0"
+          animation="property:position;to:-0.22 0.19 0;dur:750;loop:true;dir:alternate;easing:easeInOutSine;delay:80"></a-cone>
       </a-entity>
-      <a-entity position="1.6 0.3 0" rotation="0 0 -90">
-        <a-cylinder color="#6EC6FF" radius="0.028" height="0.70" position="0 0 0"
-          animation="property:position;to:-0.55 0 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cylinder>
-        <a-cone color="#6EC6FF" radius-bottom="0.07" radius-top="0" height="0.15" position="0 0.44 0"
-          animation="property:position;to:-0.55 0.44 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cone>
+      <a-entity position="0.7 0.15 0" rotation="0 0 -90">
+        <a-cylinder color="#6EC6FF" radius="0.010" height="0.28" position="0 0 0"
+          animation="property:position;to:-0.22 0 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cylinder>
+        <a-cone color="#6EC6FF" radius-bottom="0.028" radius-top="0" height="0.06" position="0 0.18 0"
+          animation="property:position;to:-0.22 0.18 0;dur:850;loop:true;dir:alternate;easing:easeInOutSine;delay:250"></a-cone>
       </a-entity>
     </a-entity>
 
     <!-- PANAH KONDUKSI: dari bawah ke kaki -->
     <a-entity id="layer-konduksi" visible="false">
-      <a-entity position="0 -3.2 0">
-        <a-cylinder color="#FFB830" radius="0.042" height="0.80" position="0 0 0"
-          animation="property:position;to:0 0.65 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
-        <a-cone color="#FFB830" radius-bottom="0.10" radius-top="0" height="0.22" position="0 0.50 0"
-          animation="property:position;to:0 1.15 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
+      <a-entity position="0 -0.8 0">
+        <a-cylinder color="#FFB830" radius="0.016" height="0.35" position="0 0 0"
+          animation="property:position;to:0 0.28 0;dur:800;loop:true;easing:easeInQuad"></a-cylinder>
+        <a-cone color="#FFB830" radius-bottom="0.040" radius-top="0" height="0.09" position="0 0.22 0"
+          animation="property:position;to:0 0.50 0;dur:800;loop:true;easing:easeInQuad"></a-cone>
       </a-entity>
-      <a-entity position="-0.35 -3.2 0">
-        <a-cylinder color="#FFD060" radius="0.032" height="0.70" position="0 0 0"
-          animation="property:position;to:0 0.58 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cylinder>
-        <a-cone color="#FFD060" radius-bottom="0.08" radius-top="0" height="0.18" position="0 0.44 0"
-          animation="property:position;to:0 1.02 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cone>
+      <a-entity position="-0.12 -0.8 0">
+        <a-cylinder color="#FFD060" radius="0.012" height="0.30" position="0 0 0"
+          animation="property:position;to:0 0.24 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cylinder>
+        <a-cone color="#FFD060" radius-bottom="0.030" radius-top="0" height="0.07" position="0 0.19 0"
+          animation="property:position;to:0 0.43 0;dur:1000;loop:true;easing:easeInQuad;delay:200"></a-cone>
       </a-entity>
-      <a-entity position="0.35 -3.2 0">
-        <a-cylinder color="#FFB830" radius="0.032" height="0.70" position="0 0 0"
-          animation="property:position;to:0 0.58 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cylinder>
-        <a-cone color="#FFB830" radius-bottom="0.08" radius-top="0" height="0.18" position="0 0.44 0"
-          animation="property:position;to:0 1.02 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cone>
+      <a-entity position="0.12 -0.8 0">
+        <a-cylinder color="#FFB830" radius="0.012" height="0.30" position="0 0 0"
+          animation="property:position;to:0 0.24 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cylinder>
+        <a-cone color="#FFB830" radius-bottom="0.030" radius-top="0" height="0.07" position="0 0.19 0"
+          animation="property:position;to:0 0.43 0;dur:900;loop:true;easing:easeInQuad;delay:100"></a-cone>
       </a-entity>
     </a-entity>
 
@@ -681,7 +677,7 @@ function toggleHeat(layer){
 function setVis(id,val){ const el=document.getElementById(id); if(el) el.setAttribute('visible',val); }
 
 // ══ ZOOM & ROTATE ══
-let touchStartDist=0, touchStartScale=0.1, currentScale=0.1;
+let touchStartDist=0, touchStartScale=0.015, currentScale=0.015;
 let isDragging=false, lastTouchX=0, lastTouchY=0, currentRotY=0, currentRotX=0;
 let mouseDown=false, lastMouseX=0, lastMouseY=0;
 const getTubuh = ()=>document.getElementById('tubuh');
