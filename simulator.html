@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HeatGuard — Body Heat Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#020810;
+  --bg2:#080e23;
+  --bg3:#0d1630;
+  --border:rgba(255,255,255,0.10);
+  --border2:rgba(255,255,255,0.18);
+  --text:rgba(255,255,255,0.85);
+  --muted:rgba(255,255,255,0.40);
+  --accent:#4DB8FF;
+  --green:#4DF0A0;
+  --yellow:#FFD700;
+  --orange:#FF8C00;
+  --red:#FF4040;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+#hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(2,8,20,0.98),transparent);
+  border-bottom:1px solid var(--border);
+}
+.hdr-title{font-family:'Orbitron',sans-serif;font-size:clamp(13px,3vw,20px);font-weight:900;
+  background:linear-gradient(90deg,#FF6B00,#FFD700,#FF6B00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-title span{-webkit-text-fill-color:#fff;}
+.hdr-sub{font-size:9px;color:var(--muted);margin-top:1px;}
+#back-btn{
+  background:rgba(255,255,255,0.07);border:1px solid var(--border2);
+  border-radius:8px;padding:6px 12px;color:#fff;font-size:10px;font-weight:600;
+  cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:5px;
+}
+#back-btn:hover{background:rgba(255,255,255,0.12);}
+
+/* ── MAIN LAYOUT ── */
+#main{display:flex;flex:1;overflow:hidden;gap:0;}
+
+/* ── PANELS ── */
+.panel{
+  padding:10px 10px;overflow-y:auto;scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,0.1) transparent;
+}
+.panel::-webkit-scrollbar{width:3px;}
+.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
+
+#panel-left{width:220px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+#panel-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;position:relative;overflow:hidden;}
+#panel-right{width:200px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+
+/* ── CONTROL CARDS ── */
+.ctrl-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:10px 12px;
+}
+.ctrl-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.ctrl-label span{font-size:12px;}
+
+/* Slider */
+.sim-slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer;margin:4px 0;}
+.sim-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 0 6px rgba(0,0,0,0.5);}
+.slider-row{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-top:3px;}
+.slider-val{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+
+/* Toggle buttons */
+.tog-group{display:flex;flex-direction:column;gap:4px;}
+.tog-btn{
+  display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;
+  width:100%;text-align:left;
+}
+.tog-btn .tog-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:all .2s;}
+.tog-btn.active{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.30);color:#fff;}
+.tog-btn.active .tog-dot{box-shadow:0 0 6px currentColor;}
+
+/* Sun intensity colors */
+.tog-btn.sun-low.active   {border-color:var(--green);color:var(--green);}
+.tog-btn.sun-low.active .tog-dot{background:var(--green);}
+.tog-btn.sun-med.active   {border-color:var(--yellow);color:var(--yellow);}
+.tog-btn.sun-med.active .tog-dot{background:var(--yellow);}
+.tog-btn.sun-high.active  {border-color:var(--red);color:var(--red);}
+.tog-btn.sun-high.active .tog-dot{background:var(--red);}
+
+/* Activity colors */
+.tog-btn.act-duduk.active   {border-color:#7ACFFF;color:#7ACFFF;}
+.tog-btn.act-duduk.active .tog-dot{background:#7ACFFF;}
+.tog-btn.act-jalan.active   {border-color:var(--green);color:var(--green);}
+.tog-btn.act-jalan.active .tog-dot{background:var(--green);}
+.tog-btn.act-lari.active    {border-color:var(--yellow);color:var(--yellow);}
+.tog-btn.act-lari.active .tog-dot{background:var(--yellow);}
+.tog-btn.act-berat.active   {border-color:var(--red);color:var(--red);}
+.tog-btn.act-berat.active .tog-dot{background:var(--red);}
+
+/* Water bottle visual */
+.bottle-wrap{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.bottle{width:24px;height:40px;border:2px solid rgba(77,184,255,0.5);border-radius:3px 3px 5px 5px;overflow:hidden;position:relative;flex-shrink:0;}
+.bottle-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,#4DB8FF,#0077CC);transition:height .5s ease;}
+.water-ml{font-size:16px;font-weight:700;color:var(--accent);}
+.water-label{font-size:8px;color:var(--muted);}
+
+/* ── CENTER VISUAL ── */
+#sim-canvas-wrap{position:relative;width:100%;max-width:320px;height:100%;}
+canvas#sim-canvas{width:100%;height:100%;}
+
+/* Run button */
+#run-btn{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#FF6B00,#FFD700);
+  border:none;border-radius:12px;padding:10px 28px;
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;
+  color:#000;cursor:pointer;letter-spacing:.05em;
+  box-shadow:0 4px 20px rgba(255,140,0,0.4);
+  transition:all .2s;white-space:nowrap;
+}
+#run-btn:hover{transform:translateX(-50%) scale(1.04);box-shadow:0 6px 28px rgba(255,140,0,0.5);}
+#run-btn:active{transform:translateX(-50%) scale(0.97);}
+
+/* ── RIGHT DASHBOARD ── */
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.dash-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.dash-val{font-size:22px;font-weight:700;color:#fff;transition:color .5s;}
+.dash-unit{font-size:10px;color:var(--muted);font-weight:400;}
+
+/* Gauge */
+.gauge-wrap{position:relative;width:90px;height:50px;margin:0 auto;}
+.gauge-svg{width:90px;height:50px;}
+
+/* Hidrasi bar */
+.hidra-bar-bg{height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:4px;}
+.hidra-bar-fill{height:100%;border-radius:4px;transition:width .6s ease,background .6s;}
+.hidra-pct{font-size:18px;font-weight:700;color:var(--accent);transition:color .5s;}
+
+/* Jantung animasi */
+.heart-wrap{display:flex;align-items:center;gap:8px;}
+#heart-icon{font-size:22px;display:inline-block;animation:none;}
+.heart-bpm{font-size:18px;font-weight:700;color:#FF8090;}
+@keyframes heartbeat{0%,100%{transform:scale(1)}20%{transform:scale(1.25)}40%{transform:scale(1)}}
+
+/* Risiko badge */
+#risiko-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:10px;
+  border:1px solid;transition:all .5s;margin-top:2px;
+}
+#risiko-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+#risiko-text{font-size:11px;font-weight:700;}
+
+/* ── HISTORY TABLE ── */
+#history-wrap{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(2,8,20,0.96);border-top:1px solid var(--border);
+  max-height:0;overflow:hidden;transition:max-height .4s ease;
+  z-index:50;
+}
+#history-wrap.open{max-height:180px;}
+#history-table-inner{padding:8px 12px;overflow-x:auto;}
+#history-toggle{
+  position:absolute;bottom:52px;right:12px;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:8px;padding:5px 10px;font-size:9px;font-weight:700;
+  color:var(--muted);cursor:pointer;transition:all .2s;z-index:51;
+}
+#history-toggle:hover{color:#fff;border-color:rgba(255,255,255,0.3);}
+table{width:100%;border-collapse:collapse;font-size:9px;}
+thead th{color:var(--muted);font-weight:600;padding:4px 8px;text-align:left;border-bottom:1px solid var(--border);}
+tbody td{padding:4px 8px;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.04);}
+tbody tr:last-child td{border-bottom:none;}
+.risk-chip{display:inline-block;padding:2px 7px;border-radius:10px;font-size:8px;font-weight:700;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  #panel-left{width:160px;}
+  #panel-right{width:150px;}
+  .dash-val{font-size:16px;}
+  .water-ml{font-size:13px;}
+  .ctrl-card{padding:7px 9px;}
+  .tog-btn{font-size:9px;padding:5px 7px;}
+  .ctrl-label{font-size:8px;margin-bottom:5px;}
+  .slider-val{font-size:15px;}
+}
+@media(max-width:600px){
+  #panel-left{width:130px;}
+  #panel-right{width:125px;}
+  .ctrl-card{padding:6px 8px;}
+  .tog-btn{font-size:8px;padding:4px 6px;gap:5px;}
+  .tog-btn .tog-dot{width:6px;height:6px;}
+  .ctrl-label{font-size:7px;margin-bottom:4px;}
+  .slider-val{font-size:13px;margin-bottom:2px;}
+  .slider-row{font-size:7px;}
+  .water-ml{font-size:12px;}
+  .water-label{font-size:7px;}
+  .bottle{width:18px;height:32px;}
+  .dash-label{font-size:7px;margin-bottom:4px;}
+  .hidra-pct{font-size:14px;}
+  .heart-bpm{font-size:14px;}
+  #heart-icon{font-size:16px;}
+  .dash-card{padding:7px 9px;}
+  #risiko-text{font-size:9px;}
+  #risiko-advice{font-size:8px;}
+  .gauge-wrap{width:70px;height:40px;}
+  .gauge-svg{width:70px;height:40px;}
+  #run-btn{font-size:9px;padding:8px 18px;}
+  #history-toggle{font-size:8px;padding:4px 8px;bottom:46px;}
+  .hdr-title{font-size:12px;}
+  .hdr-sub{font-size:7px;}
+  #back-btn{font-size:9px;padding:5px 9px;}
+  #hdr{padding:7px 10px;}
+}
+@media(max-width:480px){
+  #panel-left{width:110px;}
+  #panel-right{width:105px;}
+  .tog-btn{font-size:7px;padding:4px 5px;gap:4px;}
+  .ctrl-label span{font-size:10px;}
+  /* sembunyikan elemen yang kurang penting */
+  .slider-row{display:none;}
+  .water-label{display:none;}
+  #risiko-advice{display:none;}
+  .hidra-bar-bg{height:5px;}
+  #suhu-tubuh-status{font-size:7px;}
+}
+/* Paksa landscape hint di portrait */
+@media(max-width:480px) and (orientation:portrait){
+  body::before{
+    content:'🔄 Putar layar ke landscape untuk tampilan terbaik';
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(2,8,20,0.97);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:rgba(255,255,255,0.7);
+    text-align:center;padding:20px;
+    font-family:'Inter',sans-serif;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <a href="index.html" id="back-btn">← AR</a>
+  <div style="text-align:center;flex:1;">
+    <div class="hdr-title"><span>HEAT</span>GUARD AR</div>
+    <div class="hdr-sub">Body Heat Simulator</div>
+  </div>
+  <div style="width:60px;"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="panel-left" class="panel">
+
+    <!-- Suhu Lingkungan -->
+    <div class="ctrl-card">
+      <div class="ctrl-label"><span>🌡️</span> Suhu Lingkungan</div>
+      <div class="slider-val" id="suhu-env-val">30°C</div>
+      <input type="range" class="sim-slider" id="suhu-env" min="25" max="45" value="30" style="background:linear-gradient(to right,#4DB8FF 25%,rgba(255,255,255,0.12) 25%)">
+      <div class="slider-row"><span>25°C</span><span>35°C</span><span>45°C</span></div>
+    </div>
+
+    <!-- Intensitas Matahari -->
+    <div class="ctrl-card">
+      <div class="ctrl-label"><span>☀️</span> Intensitas Matahari</div>
+      <div class="tog-group">
+        <button class="tog-btn sun-low active" data-group="sun" data-val="low" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🟢 Rendah
+        </button>
+        <button class="tog-btn sun-med" data-group="sun" data-val="med" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🟡 Sedang
+        </button>
+        <button class="tog-btn sun-high" data-group="sun" data-val="high" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🔴 Tinggi
+        </button>
+      </div>
+    </div>
+
+    <!-- Aktivitas -->
+    <div class="ctrl-card">
+      <div class="ctrl-label"><span>🏃</span> Aktivitas Fisik</div>
+      <div class="tog-group">
+        <button class="tog-btn act-duduk active" data-group="act" data-val="duduk" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🪑 Duduk
+        </button>
+        <button class="tog-btn act-jalan" data-group="act" data-val="jalan" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🚶 Berjalan
+        </button>
+        <button class="tog-btn act-lari" data-group="act" data-val="lari" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🏃 Lari
+        </button>
+        <button class="tog-btn act-berat" data-group="act" data-val="berat" onclick="selectTog(this)">
+          <div class="tog-dot"></div>🏋️ Olahraga Berat
+        </button>
+      </div>
+    </div>
+
+    <!-- Air -->
+    <div class="ctrl-card">
+      <div class="ctrl-label"><span>🥤</span> Konsumsi Air</div>
+      <div class="bottle-wrap">
+        <div class="bottle"><div class="bottle-fill" id="bottle-fill" style="height:100%"></div></div>
+        <div>
+          <div class="water-ml" id="water-val">2000</div>
+          <div class="water-label">ml / hari</div>
+        </div>
+      </div>
+      <input type="range" class="sim-slider" id="water-slider" min="0" max="2000" value="2000" step="100" style="margin-top:8px;background:linear-gradient(to right,#4DB8FF 100%,rgba(255,255,255,0.12) 100%)">
+      <div class="slider-row"><span>0 ml</span><span>1000</span><span>2000</span></div>
+    </div>
+
+  </div>
+
+  <!-- CENTER -->
+  <div id="panel-center">
+    <div id="sim-canvas-wrap">
+      <canvas id="sim-canvas"></canvas>
+    </div>
+    <button id="run-btn" onclick="runSimulation()">▶ MULAI SIMULASI</button>
+    <div id="history-toggle" onclick="toggleHistory()">📊 Riwayat</div>
+    <div id="history-wrap">
+      <div id="history-table-inner">
+        <table>
+          <thead><tr><th>#</th><th>Suhu</th><th>Aktivitas</th><th>Air</th><th>Suhu Tubuh</th><th>Risiko</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="panel-right" class="panel">
+
+    <!-- Suhu Tubuh -->
+    <div class="dash-card">
+      <div class="dash-label"><span>🌡️</span> Suhu Tubuh</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 90 50">
+          <path d="M5 45 A40 40 0 0 1 85 45" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="7" stroke-linecap="round"/>
+          <path id="gauge-arc" d="M5 45 A40 40 0 0 1 85 45" fill="none" stroke="#4DF0A0" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="126" stroke-dashoffset="100"/>
+          <text x="45" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" id="gauge-text">36.5°C</text>
+        </svg>
+      </div>
+      <div id="suhu-tubuh-status" style="font-size:9px;text-align:center;color:var(--green);font-weight:700;margin-top:2px;">NORMAL</div>
+    </div>
+
+    <!-- Hidrasi -->
+    <div class="dash-card">
+      <div class="dash-label"><span>💧</span> Tingkat Hidrasi</div>
+      <div class="hidra-pct" id="hidra-pct">100%</div>
+      <div class="hidra-bar-bg">
+        <div class="hidra-bar-fill" id="hidra-bar" style="width:100%;background:#4DB8FF;"></div>
+      </div>
+      <div style="font-size:8px;color:var(--muted);margin-top:3px;" id="hidra-label">Terhidrasi baik</div>
+    </div>
+
+    <!-- Detak Jantung -->
+    <div class="dash-card">
+      <div class="dash-label"><span>❤️</span> Detak Jantung</div>
+      <div class="heart-wrap">
+        <div id="heart-icon">❤️</div>
+        <div>
+          <span class="heart-bpm" id="bpm-val">72</span>
+          <span class="dash-unit"> bpm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risiko -->
+    <div class="dash-card">
+      <div class="dash-label"><span>🚨</span> Risiko Heatstroke</div>
+      <div id="risiko-badge" style="border-color:var(--green);background:rgba(77,240,160,0.08);">
+        <div id="risiko-dot" style="background:var(--green);"></div>
+        <div id="risiko-text" style="color:var(--green);">Aman</div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:6px;line-height:1.5;" id="risiko-advice">Kondisi tubuh normal. Tetap jaga hidrasi.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  suhuEnv: 30,
+  sun: 'low',
+  act: 'duduk',
+  water: 2000,
+};
+let historyData = [];
+let simRunning = false;
+let heartInterval = null;
+let simAnimFrame = null;
+
+// ── CANVAS SETUP ──
+const canvas = document.getElementById('sim-canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resizeCanvas(){
+  const wrap = document.getElementById('sim-canvas-wrap');
+  W = canvas.width  = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight - 52; // leave room for button
+  drawScene();
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 100);
+
+// ── DRAW SCENE ──
+let bodyColor = '#4DF0A0'; // changes with temp
+let actFrame  = 0;
+let particles = [];
+
+function getBodyColor(temp){
+  if(temp < 37.5) return '#4DF0A0';
+  if(temp < 38.5) return '#FFD700';
+  if(temp < 39.5) return '#FF8C00';
+  return '#FF3030';
+}
+
+function drawScene(){
+  if(!W || !H) return;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H * 0.45;
+
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  const envHeat = (state.suhuEnv - 25) / 20; // 0–1
+  const r = Math.round(10 + envHeat * 30);
+  const g = Math.round(14 + envHeat * 10);
+  const b = Math.round(35 - envHeat * 20);
+  sky.addColorStop(0, `rgb(${r},${g},${b})`);
+  sky.addColorStop(1, `rgb(${Math.round(r*1.5)},${Math.round(g*1.3)},${Math.round(b*0.6)})`);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // Ground
+  const groundY = H * 0.78;
+  const grd = ctx.createLinearGradient(0, groundY, 0, H);
+  const gc = envHeat > 0.5 ? `rgba(120,60,0,0.6)` : `rgba(20,60,20,0.5)`;
+  grd.addColorStop(0, gc);
+  grd.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, groundY, W, H - groundY);
+
+  // Sun
+  const sunSize = state.sun === 'low' ? 18 : state.sun === 'med' ? 26 : 36;
+  const sunAlpha = state.sun === 'low' ? 0.7 : state.sun === 'med' ? 0.9 : 1.0;
+  const sunX = W * 0.78, sunY = H * 0.12;
+  ctx.save();
+  ctx.globalAlpha = sunAlpha;
+  // Glow
+  const sunGlow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunSize * 2.5);
+  sunGlow.addColorStop(0, 'rgba(255,220,50,0.5)');
+  sunGlow.addColorStop(1, 'rgba(255,140,0,0)');
+  ctx.fillStyle = sunGlow;
+  ctx.beginPath(); ctx.arc(sunX, sunY, sunSize * 2.5, 0, Math.PI * 2); ctx.fill();
+  // Core
+  ctx.fillStyle = '#FFE040';
+  ctx.beginPath(); ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // Radiasi rays (if sun active)
+  if(state.sun !== 'low'){
+    const numRays = state.sun === 'med' ? 3 : 5;
+    ctx.save();
+    ctx.globalAlpha = 0.18 + Math.sin(Date.now()/400)*0.06;
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 1.5;
+    for(let i = 0; i < numRays; i++){
+      const t = i / numRays;
+      const rx = sunX + (cx - sunX) * t * 0.6 + (Math.random()-0.5)*10;
+      const ry = sunY + (cy*0.6 - sunY) * t * 0.6;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.moveTo(sunX, sunY);
+      ctx.lineTo(cx + (Math.random()-0.5)*40, cy*0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Body offset for activity animation
+  const bobY = getActivityBob();
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(cx, groundY + 4, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Draw human figure
+  drawHuman(cx, cy + bobY, bodyColor);
+
+  // Sweat particles if high temp
+  drawSweatParticles(cx, cy);
+
+  // Konveksi waves
+  if(state.act === 'berat' || state.suhuEnv >= 38){
+    drawKonveksi(cx, cy);
+  }
+
+  // Konduksi ground heat
+  if(state.suhuEnv >= 35){
+    drawKonduksi(cx, groundY);
+  }
+}
+
+function getActivityBob(){
+  const t = Date.now() / 1000;
+  switch(state.act){
+    case 'duduk':  return 14;
+    case 'jalan':  return Math.abs(Math.sin(t * 3)) * 3;
+    case 'lari':   return Math.abs(Math.sin(t * 7)) * 6;
+    case 'berat':  return Math.abs(Math.sin(t * 9)) * 8;
+    default: return 0;
+  }
+}
+
+// Helper: draw a limb segment from joint A to joint B
+function drawLimb(ax, ay, bx, by, lw, color){
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(bx, by);
+  ctx.stroke();
+}
+
+// Helper: endpoint given origin, angle (rad), length
+function joint(ox, oy, angle, len){
+  return { x: ox + Math.sin(angle) * len, y: oy + Math.cos(angle) * len };
+}
+
+function drawHuman(cx, cy, color){
+  const s = Math.min(W, H) * 0.10;
+  const t = Date.now() / 1000;
+
+  ctx.save();
+  ctx.lineCap  = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 14;
+
+  // ── anatomical measurements (proportional to s) ──
+  const headR    = s * 0.55;
+  const torsoLen = s * 1.55;
+  const thighLen = s * 1.10;
+  const shinLen  = s * 1.00;
+  const uArmLen  = s * 0.85;
+  const fArmLen  = s * 0.80;
+  const lw       = s * 0.22; // limb width
+
+  // joint anchors (static)
+  const headY   = cy - torsoLen - headR * 0.6;
+  const neckY   = cy - torsoLen;
+  const hipY    = cy;
+  const shoulderOff = s * 0.30; // shoulder width from center
+
+  // ── DUDUK ──
+  if(state.act === 'duduk'){
+    const tilt = 0.08; // slight forward lean
+    // torso
+    const shoulderX = cx + Math.sin(tilt) * torsoLen * 0.5;
+    const shoulderY = neckY + Math.cos(tilt) * 0;
+    drawLimb(cx, hipY, cx + Math.sin(tilt)*torsoLen*0.5, neckY, lw*1.1, color);
+    // head
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx + Math.sin(tilt)*torsoLen*0.55, headY + 4, headR, 0, Math.PI*2); ctx.fill();
+    // legs: thigh horizontal, shin down
+    const seatY = hipY;
+    drawLimb(cx, seatY, cx - thighLen*0.9, seatY,          lw, color); // L thigh
+    drawLimb(cx - thighLen*0.9, seatY, cx - thighLen*0.9, seatY + shinLen*0.9, lw, color); // L shin
+    drawLimb(cx, seatY, cx + thighLen*0.9, seatY,          lw, color); // R thigh
+    drawLimb(cx + thighLen*0.9, seatY, cx + thighLen*0.9, seatY + shinLen*0.9, lw, color); // R shin
+    // arms: relaxed down
+    const sLx = cx - shoulderOff, sRx = cx + shoulderOff, sY = neckY + s*0.45;
+    const eLx = sLx - s*0.1, eRx = sRx + s*0.1, eY = sY + uArmLen*0.9;
+    drawLimb(sLx, sY, eLx, eY, lw, color);
+    drawLimb(sRx, sY, eRx, eY, lw, color);
+    drawLimb(eLx, eY, eLx + s*0.05, eY + fArmLen*0.85, lw*0.85, color);
+    drawLimb(eRx, eY, eRx - s*0.05, eY + fArmLen*0.85, lw*0.85, color);
+    ctx.restore(); return;
+  }
+
+  // ── WALKING ──
+  if(state.act === 'jalan'){
+    const freq  = 3.0;
+    const phase = t * freq;
+    // body tilt (subtle side sway)
+    const tilt  = Math.sin(phase) * 0.04;
+    const torsoLeanX = Math.sin(tilt) * torsoLen * 0.3;
+
+    // torso
+    const sY = neckY + s*0.45;
+    drawLimb(cx, hipY, cx + torsoLeanX, sY, lw*1.1, color);
+    // head
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx + torsoLeanX, headY, headR, 0, Math.PI*2); ctx.fill();
+
+    // shoulder positions
+    const sLx = cx + torsoLeanX - shoulderOff;
+    const sRx = cx + torsoLeanX + shoulderOff;
+
+    // HIP angles — opposite legs alternate
+    const lHipA =  Math.sin(phase) * 0.40;   // left hip
+    const rHipA = -Math.sin(phase) * 0.40;   // right hip (opposite)
+
+    // KNEE angles — bend on back-swing
+    const lKneeA = Math.max(0, -Math.sin(phase)) * 0.35;
+    const rKneeA = Math.max(0,  Math.sin(phase)) * 0.35;
+
+    // left leg
+    const lKnee = joint(cx, hipY, lHipA, thighLen);
+    const lFoot = joint(lKnee.x, lKnee.y, lHipA + lKneeA, shinLen);
+    drawLimb(cx, hipY, lKnee.x, lKnee.y, lw, color);
+    drawLimb(lKnee.x, lKnee.y, lFoot.x, lFoot.y, lw*0.85, color);
+
+    // right leg
+    const rKnee = joint(cx, hipY, rHipA, thighLen);
+    const rFoot = joint(rKnee.x, rKnee.y, rHipA + rKneeA, shinLen);
+    drawLimb(cx, hipY, rKnee.x, rKnee.y, lw, color);
+    drawLimb(rKnee.x, rKnee.y, rFoot.x, rFoot.y, lw*0.85, color);
+
+    // ARMS — counter-swing to legs
+    const lShoulderA = -Math.sin(phase) * 0.35;
+    const rShoulderA =  Math.sin(phase) * 0.35;
+    const lElbowA    = Math.max(0, Math.sin(phase)) * 0.30;
+    const rElbowA    = Math.max(0, -Math.sin(phase)) * 0.30;
+
+    const lElbow = joint(sLx, sY, lShoulderA, uArmLen);
+    const lHand  = joint(lElbow.x, lElbow.y, lShoulderA - lElbowA, fArmLen);
+    drawLimb(sLx, sY, lElbow.x, lElbow.y, lw, color);
+    drawLimb(lElbow.x, lElbow.y, lHand.x, lHand.y, lw*0.8, color);
+
+    const rElbow = joint(sRx, sY, rShoulderA, uArmLen);
+    const rHand  = joint(rElbow.x, rElbow.y, rShoulderA - rElbowA, fArmLen);
+    drawLimb(sRx, sY, rElbow.x, rElbow.y, lw, color);
+    drawLimb(rElbow.x, rElbow.y, rHand.x, rHand.y, lw*0.8, color);
+
+    ctx.restore(); return;
+  }
+
+  // ── LARI ──
+  if(state.act === 'lari'){
+    const freq  = 7.0;
+    const phase = t * freq;
+    // forward lean
+    const lean  = 0.18;
+    const torsoLeanX = Math.sin(lean) * torsoLen * 0.7;
+    const torsoLeanY = -Math.cos(lean) * torsoLen * 0.05;
+
+    drawLimb(cx, hipY, cx + torsoLeanX, neckY + torsoLeanY, lw*1.1, color);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx + torsoLeanX, headY + torsoLeanY - s*0.05, headR, 0, Math.PI*2); ctx.fill();
+
+    const sLx = cx + torsoLeanX - shoulderOff;
+    const sRx = cx + torsoLeanX + shoulderOff;
+    const sY  = neckY + torsoLeanY + s*0.45;
+
+    // Big hip swing for running
+    const lHipA =  Math.sin(phase) * 0.70;
+    const rHipA = -Math.sin(phase) * 0.70;
+
+    // Knee bend: strong on back swing (heel kick)
+    const lKneeA = Math.max(0, -Math.sin(phase)) * 0.90;
+    const rKneeA = Math.max(0,  Math.sin(phase)) * 0.90;
+
+    const lKnee = joint(cx, hipY, lHipA, thighLen);
+    const lFoot = joint(lKnee.x, lKnee.y, lHipA + lKneeA, shinLen);
+    drawLimb(cx, hipY, lKnee.x, lKnee.y, lw, color);
+    drawLimb(lKnee.x, lKnee.y, lFoot.x, lFoot.y, lw*0.85, color);
+
+    const rKnee = joint(cx, hipY, rHipA, thighLen);
+    const rFoot = joint(rKnee.x, rKnee.y, rHipA + rKneeA, shinLen);
+    drawLimb(cx, hipY, rKnee.x, rKnee.y, lw, color);
+    drawLimb(rKnee.x, rKnee.y, rFoot.x, rFoot.y, lw*0.85, color);
+
+    // Arms pumping — bent at 90° elbow, strong swing
+    const lShoulderA = -Math.sin(phase) * 0.65;
+    const rShoulderA =  Math.sin(phase) * 0.65;
+    const elbowBend  = 0.85; // fixed ~90° bend
+
+    const lElbow = joint(sLx, sY, lShoulderA, uArmLen);
+    const lHand  = joint(lElbow.x, lElbow.y, lShoulderA - elbowBend, fArmLen*0.85);
+    drawLimb(sLx, sY, lElbow.x, lElbow.y, lw, color);
+    drawLimb(lElbow.x, lElbow.y, lHand.x, lHand.y, lw*0.8, color);
+
+    const rElbow = joint(sRx, sY, rShoulderA, uArmLen);
+    const rHand  = joint(rElbow.x, rElbow.y, rShoulderA - elbowBend, fArmLen*0.85);
+    drawLimb(sRx, sY, rElbow.x, rElbow.y, lw, color);
+    drawLimb(rElbow.x, rElbow.y, rHand.x, rHand.y, lw*0.8, color);
+
+    ctx.restore(); return;
+  }
+
+  // ── OLAHRAGA BERAT (jumping jack / squat thrust) ──
+  if(state.act === 'berat'){
+    const freq  = 9.0;
+    const phase = t * freq;
+    const squat = Math.max(0, Math.sin(phase)); // 0–1 squat depth
+
+    // badan turun saat squat
+    const bodyDrop = squat * s * 0.6;
+    const actualHipY = hipY + bodyDrop;
+    const actualNeckY = neckY + bodyDrop;
+
+    // torso — slight forward lean during squat
+    const lean = squat * 0.20;
+    const tlx  = Math.sin(lean) * torsoLen * 0.3;
+    drawLimb(cx, actualHipY, cx + tlx, actualNeckY, lw*1.1, color);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx + tlx, headY + bodyDrop, headR, 0, Math.PI*2); ctx.fill();
+
+    const sLx = cx + tlx - shoulderOff;
+    const sRx = cx + tlx + shoulderOff;
+    const sY  = actualNeckY + s*0.45;
+
+    // Legs: wide stance, bend deep on squat
+    const stanceX = s * 0.55;
+    const kneeFlexAngle = 0.30 + squat * 0.90; // deeper on squat
+
+    // Left
+    const lHipX = cx - stanceX * 0.3;
+    const lKneeX = cx - stanceX;
+    const lKneeY = actualHipY + thighLen * Math.cos(kneeFlexAngle * 0.5);
+    const lFootX = lKneeX + Math.sin(kneeFlexAngle) * shinLen * 0.5;
+    const lFootY = lKneeY + shinLen * Math.cos(kneeFlexAngle * 0.4);
+    drawLimb(lHipX, actualHipY, lKneeX, lKneeY, lw, color);
+    drawLimb(lKneeX, lKneeY, lFootX, lFootY, lw*0.85, color);
+
+    // Right
+    const rHipX = cx + stanceX * 0.3;
+    const rKneeX = cx + stanceX;
+    const rKneeY = lKneeY;
+    const rFootX = rKneeX - Math.sin(kneeFlexAngle) * shinLen * 0.5;
+    const rFootY = lFootY;
+    drawLimb(rHipX, actualHipY, rKneeX, rKneeY, lw, color);
+    drawLimb(rKneeX, rKneeY, rFootX, rFootY, lw*0.85, color);
+
+    // Arms: raise overhead as they stand, down during squat
+    const armRaise = (1 - squat);
+    const lShoulderA = -(0.4 + armRaise * 1.8); // swing overhead
+    const rShoulderA =  (0.4 + armRaise * 1.8);
+
+    const lElbow = joint(sLx, sY, lShoulderA, uArmLen);
+    const lHand  = joint(lElbow.x, lElbow.y, lShoulderA * 0.5, fArmLen*0.9);
+    drawLimb(sLx, sY, lElbow.x, lElbow.y, lw, color);
+    drawLimb(lElbow.x, lElbow.y, lHand.x, lHand.y, lw*0.8, color);
+
+    const rElbow = joint(sRx, sY, rShoulderA, uArmLen);
+    const rHand  = joint(rElbow.x, rElbow.y, rShoulderA * 0.5, fArmLen*0.9);
+    drawLimb(sRx, sY, rElbow.x, rElbow.y, lw, color);
+    drawLimb(rElbow.x, rElbow.y, rHand.x, rHand.y, lw*0.8, color);
+
+    ctx.restore(); return;
+  }
+
+  ctx.restore();
+}
+
+let sweatP = [];
+function drawSweatParticles(cx, cy){
+  const result = calcSimResult();
+  if(result.temp < 37.5){ sweatP = []; return; }
+  const intensity = Math.min(1, (result.temp - 37.5) / 3);
+
+  // Spawn
+  if(Math.random() < intensity * 0.4){
+    const angle = Math.random() * Math.PI * 2;
+    const r = 28 + Math.random() * 20;
+    sweatP.push({
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r * 1.6 - 20,
+      vx: Math.cos(angle) * (0.5 + Math.random()),
+      vy: Math.sin(angle) * 0.8 - 0.8,
+      life: 0, maxLife: 30 + Math.random() * 20,
+      r: 2 + Math.random() * 2,
+      hue: result.temp >= 40 ? 0 : 190,
+    });
+  }
+
+  sweatP = sweatP.filter(p => p.life < p.maxLife);
+  sweatP.forEach(p => {
+    p.life++; p.x += p.vx; p.y += p.vy;
+    const alpha = (1 - p.life / p.maxLife) * 0.8;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = `hsl(${p.hue}, 90%, 65%)`;
+    ctx.shadowColor = `hsl(${p.hue}, 90%, 65%)`;
+    ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawKonveksi(cx, cy){
+  const t = Date.now() / 800;
+  ctx.save();
+  ctx.globalAlpha = 0.12 + Math.sin(t) * 0.04;
+  ctx.strokeStyle = '#4DB8FF';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 5]);
+  for(let i = 0; i < 2; i++){
+    const side = i === 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 55, cy - 30);
+    ctx.quadraticCurveTo(cx + side * 45, cy + 20, cx + side * 50, cy + 60);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawKonduksi(cx, groundY){
+  const t = Date.now() / 600;
+  ctx.save();
+  ctx.globalAlpha = 0.15 + Math.sin(t) * 0.05;
+  const grad = ctx.createLinearGradient(cx - 40, groundY, cx + 40, groundY);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(0.5, '#FFB830');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(cx - 40, groundY - 4, 80, 8);
+  ctx.restore();
+}
+
+// ── SIMULATION CALCULATION ──
+function calcSimResult(){
+  const envTemp = state.suhuEnv;
+  const sunVal  = {low:0, med:0.8, high:1.8}[state.sun];
+  const actVal  = {duduk:0, jalan:0.5, lari:1.2, berat:2.0}[state.act];
+  const waterFactor = state.water / 2000; // 0–1
+
+  // Suhu tubuh
+  let baseTemp = 36.5;
+  baseTemp += (envTemp - 25) * 0.06;
+  baseTemp += sunVal * 0.5;
+  baseTemp += actVal * 0.55;
+  baseTemp -= waterFactor * 0.4;
+  baseTemp = Math.max(35.5, Math.min(41.5, baseTemp));
+
+  // Hidrasi
+  let hidra = 100;
+  hidra -= (envTemp - 25) * 1.2;
+  hidra -= actVal * 8;
+  hidra -= sunVal * 5;
+  hidra += waterFactor * 40;
+  hidra = Math.max(5, Math.min(100, hidra));
+
+  // BPM
+  let bpm = 70;
+  bpm += (baseTemp - 36.5) * 12;
+  bpm += actVal * 18;
+  bpm -= waterFactor * 5;
+  bpm = Math.round(Math.max(60, Math.min(160, bpm)));
+
+  // Risiko
+  let risiko;
+  const riskScore = (baseTemp - 36.5) * 2 + (1 - waterFactor) * 2 + actVal * 0.5;
+  if(riskScore < 1.5)       risiko = 'aman';
+  else if(riskScore < 3.0)  risiko = 'waspada';
+  else if(riskScore < 4.5)  risiko = 'sedang';
+  else                       risiko = 'tinggi';
+
+  return { temp: Math.round(baseTemp * 10) / 10, hidra: Math.round(hidra), bpm, risiko };
+}
+
+function runSimulation(){
+  const result = calcSimResult();
+  bodyColor = getBodyColor(result.temp);
+
+  // Update gauge
+  const pct = Math.max(0, Math.min(1, (result.temp - 35) / 7));
+  const dashOffset = 126 - (126 * pct);
+  const arc = document.getElementById('gauge-arc');
+  arc.style.strokeDashoffset = dashOffset;
+  arc.style.stroke = bodyColor;
+  document.getElementById('gauge-text').textContent = result.temp + '°C';
+  document.getElementById('gauge-text').setAttribute('fill', bodyColor);
+
+  // Status
+  const statusEl = document.getElementById('suhu-tubuh-status');
+  const statusMap = {
+    aman:    {text:'NORMAL',   color:'var(--green)'},
+    waspada: {text:'DEMAM',    color:'var(--yellow)'},
+    sedang:  {text:'DEMAM TINGGI', color:'var(--orange)'},
+    tinggi:  {text:'⚠️ HEATSTROKE', color:'var(--red)'},
+  };
+  statusEl.textContent  = statusMap[result.risiko].text;
+  statusEl.style.color  = statusMap[result.risiko].color;
+
+  // Hidrasi
+  document.getElementById('hidra-pct').textContent = result.hidra + '%';
+  document.getElementById('hidra-pct').style.color = result.hidra > 60 ? 'var(--accent)' : result.hidra > 30 ? 'var(--yellow)' : 'var(--red)';
+  const barColor = result.hidra > 60 ? '#4DB8FF' : result.hidra > 30 ? '#FFD700' : '#FF4040';
+  const barEl = document.getElementById('hidra-bar');
+  barEl.style.width = result.hidra + '%';
+  barEl.style.background = barColor;
+  const hidraLabels = ['Dehidrasi parah!', 'Dehidrasi!', 'Kurang cairan', 'Cukup', 'Terhidrasi baik'];
+  const hidraIdx = Math.min(4, Math.floor(result.hidra / 21));
+  document.getElementById('hidra-label').textContent = hidraLabels[hidraIdx];
+
+  // BPM & heartbeat
+  document.getElementById('bpm-val').textContent = result.bpm;
+  const interval = Math.round(60000 / result.bpm);
+  clearInterval(heartInterval);
+  const heart = document.getElementById('heart-icon');
+  heartInterval = setInterval(()=>{
+    heart.style.animation = 'none';
+    void heart.offsetWidth;
+    heart.style.animation = 'heartbeat 0.3s ease';
+  }, interval);
+
+  // Risiko
+  const risikoMap = {
+    aman:    {text:'🟢 Aman',           color:'var(--green)',  bg:'rgba(77,240,160,0.08)',  advice:'Kondisi tubuh normal. Tetap jaga hidrasi.'},
+    waspada: {text:'🟡 Waspada',        color:'var(--yellow)', bg:'rgba(255,215,0,0.08)',   advice:'Suhu mulai naik. Istirahat & minum air.'},
+    sedang:  {text:'🟠 Risiko Sedang',  color:'var(--orange)', bg:'rgba(255,140,0,0.08)',   advice:'Segera kurangi aktivitas dan cari tempat teduh.'},
+    tinggi:  {text:'🔴 Risiko Tinggi',  color:'var(--red)',    bg:'rgba(255,40,40,0.08)',   advice:'Bahaya heatstroke! Hentikan aktivitas, kompres dingin, hubungi 119.'},
+  };
+  const rm = risikoMap[result.risiko];
+  const badge = document.getElementById('risiko-badge');
+  badge.style.borderColor = rm.color;
+  badge.style.background  = rm.bg;
+  document.getElementById('risiko-dot').style.background = rm.color;
+  document.getElementById('risiko-text').textContent = rm.text;
+  document.getElementById('risiko-text').style.color  = rm.color;
+  document.getElementById('risiko-advice').textContent = rm.advice;
+
+  // History
+  const actLabel = {duduk:'Duduk', jalan:'Berjalan', lari:'Lari', berat:'Olahraga Berat'}[state.act];
+  historyData.unshift({
+    n: historyData.length + 1,
+    suhu: state.suhuEnv + '°C',
+    act: actLabel,
+    air: state.water + ' ml',
+    suhuTubuh: result.temp + '°C',
+    risiko: result.risiko,
+  });
+  if(historyData.length > 10) historyData.pop();
+  renderHistory();
+
+  // Flash run button
+  const btn = document.getElementById('run-btn');
+  btn.textContent = '✓ Simulasi Dijalankan';
+  setTimeout(()=>{ btn.textContent = '▶ MULAI SIMULASI'; }, 1500);
+}
+
+function renderHistory(){
+  const colorMap = {aman:'#4DF0A0', waspada:'#FFD700', sedang:'#FF8C00', tinggi:'#FF4040'};
+  const labelMap = {aman:'Aman', waspada:'Waspada', sedang:'Sedang', tinggi:'Tinggi'};
+  document.getElementById('history-body').innerHTML = historyData.map(d=>`
+    <tr>
+      <td>${d.n}</td>
+      <td>${d.suhu}</td>
+      <td>${d.act}</td>
+      <td>${d.air}</td>
+      <td>${d.suhuTubuh}</td>
+      <td><span class="risk-chip" style="background:${colorMap[d.risiko]}22;color:${colorMap[d.risiko]};border:1px solid ${colorMap[d.risiko]}44">${labelMap[d.risiko]}</span></td>
+    </tr>`).join('');
+}
+
+function toggleHistory(){
+  const wrap = document.getElementById('history-wrap');
+  wrap.classList.toggle('open');
+  document.getElementById('history-toggle').textContent = wrap.classList.contains('open') ? '✕ Tutup' : '📊 Riwayat';
+}
+
+// ── CONTROLS ──
+function selectTog(el){
+  const group = el.dataset.group;
+  document.querySelectorAll(`.tog-btn[data-group="${group}"]`).forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state[group] = el.dataset.val;
+}
+
+document.getElementById('suhu-env').addEventListener('input', function(){
+  state.suhuEnv = parseInt(this.value);
+  document.getElementById('suhu-env-val').textContent = state.suhuEnv + '°C';
+  const pct = ((state.suhuEnv - 25) / 20 * 100).toFixed(1);
+  const col = state.suhuEnv < 30 ? '#4DB8FF' : state.suhuEnv < 37 ? '#FFD700' : '#FF4040';
+  this.style.background = `linear-gradient(to right,${col} ${pct}%,rgba(255,255,255,0.12) ${pct}%)`;
+});
+
+document.getElementById('water-slider').addEventListener('input', function(){
+  state.water = parseInt(this.value);
+  document.getElementById('water-val').textContent = state.water;
+  const pct = (state.water / 2000 * 100).toFixed(1);
+  document.getElementById('bottle-fill').style.height = pct + '%';
+  this.style.background = `linear-gradient(to right,#4DB8FF ${pct}%,rgba(255,255,255,0.12) ${pct}%)`;
+});
+
+// ── ANIMATION LOOP ──
+function loop(){
+  drawScene();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
